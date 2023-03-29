@@ -17,7 +17,7 @@ int main() {
 	Pixel blue = Pixel(0,0,255);
 	Pixel black = Pixel(0,0,0);
 	Pixel white = Pixel(255,255,255);
-	env.addBackground(red);
+	env.addBackground(green);
 	cam.renderImage();
 
 	return EXIT_SUCCESS; 

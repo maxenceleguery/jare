@@ -2,7 +2,10 @@
 
 3D render engine project in C++.
 
-Do not use any libraries such as OpenGL.
+## Dependencies
+
+```bash
+$ sudo apt install libpng-dev
 
 ## Compilation
 
@@ -16,6 +19,6 @@ $ make all
 $ build/main
 ```
 
-Resulting image : image.ppm
+Resulting image : image.png
 
 Maxence Leguéry

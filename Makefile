@@ -30,7 +30,7 @@ USE_STRICT			:=	false
 # define the executable output name (if set to 'auto' it will automatically be assigned the main file name)
 TARGET_NAME			:=	auto
 # custom flags:
-LFLAGS				:=
+LFLAGS				:= -lpng
 CCXFLAGS			:=
 # debug
 DEBUG				:=	-g
