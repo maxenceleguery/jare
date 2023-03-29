@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <cstring>
+#include <cmath>
 
 template<typename T>
 class Vector {
@@ -26,19 +27,38 @@ class Vector {
         }
         
     public:
+        Vector() : x((T)0), y((T)0), z((T)0) {};
         Vector(T x0, T y0, T z0) : x(x0), y(y0), z(z0) {};
-        Vector(Vector& vec) : x(vec.x), y(vec.y), z(vec.z) {};
+        //Vector(Vector<T>& vec) : x(vec.x), y(vec.y), z(vec.z) {};
         ~Vector(){};
 
-        void printCoord() const {
-            std::cout << x << " " << y << " " << z << std::endl;
+        T getX() const {
+            return x;
+        }
+        T getY() const {
+            return y;
+        }
+        T getZ() const {
+            return z;
         }
 
-        void normalize() {
+        void printCoord() const {
+            std::cout << "("
+                        << x
+                        << ";"
+                        << y
+                        << ";"
+                        << z
+                        << ")"
+                        << std::endl;
+        }
+
+        Vector<T> normalize() {
             double invNorm = fast_inverse_square_root(x*x + y*y + z*z);
             this->x*=invNorm;
             this->y*=invNorm;
             this->z*=invNorm;
+            return *this;
         }
 
         template<typename U>
@@ -49,12 +69,12 @@ class Vector {
             return *this;
         }
 
-        Vector<T> operator + (const Vector<T>& pos) const {
-            return Vector<T>(x+pos.x,y+pos.y,z+pos.z);
+        Vector<T> operator + (const Vector<T>& vec) const {
+            return Vector<T>(x+vec.x,y+vec.y,z+vec.z);
         }
 
-        Vector<T> operator- (const Vector<T>& pos) const {
-            return Vector<T>(x-pos.x,y-pos.y,z-pos.z);
+        Vector<T> operator- (const Vector<T>& vec) const {
+            return Vector<T>(x-vec.x,y-vec.y,z-vec.z);
         }
 
         Vector<T> operator- () const {
@@ -68,10 +88,10 @@ class Vector {
             return *this;
         }
 
-        Vector<T>& operator+= (const Vector<T>& pos) {
-            this->x += pos.x;
-            this->y += pos.y;
-            this->z += pos.z;
+        Vector<T>& operator+= (const Vector<T>& vec) {
+            this->x += vec.x;
+            this->y += vec.y;
+            this->z += vec.z;
             return *this;
         }
 
@@ -82,10 +102,10 @@ class Vector {
             return *this;
         }
 
-        Vector<T>& operator-= (const Vector<T>& pos) {
-            this->x -= pos.x;
-            this->y -= pos.y;
-            this->z -= pos.z;
+        Vector<T>& operator-= (const Vector<T>& vec) {
+            this->x -= vec.x;
+            this->y -= vec.y;
+            this->z -= vec.z;
             return *this;
         }
 
@@ -103,15 +123,24 @@ class Vector {
             return *this;
         }
 
-        T operator * (const Vector<T>& pos) const {
-            return x*pos.x + y*pos.y + z*pos.z;
+        T operator * (const Vector<T>& vec) const {
+            return x*vec.x + y*vec.y + z*vec.z;
         }
 
         template <typename U>
-        bool operator == (const Vector<U>& pos) const {
+        bool operator == (const Vector<U>& vec) const {
             if (std::is_same<T,U>::value) {
-                return x==pos.x && y==pos.y && z==pos.z;
+                return std::abs(x-vec.getX()) < 1E-5 && std::abs(y-vec.getY()) < 1E-5 && std::abs(z-vec.getZ()) < 1E-5;
             }
             return false;
         }
+
+        template <typename U>
+        Vector<U> crossProduct(const Vector<U>& vec2) const {
+            if (std::is_same<T,U>::value) {
+                return Vector(y*vec2.getZ() - z*vec2.getY(),z*vec2.getX() - x*vec2.getZ(),x*vec2.getY() - y*vec2.getX());
+            }
+        }
+
+
 };

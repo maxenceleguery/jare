@@ -56,7 +56,7 @@ class Camera {
             fclose(fp);
         }
 
-        void renderImage() {
+        void renderImage(const char* filename) {
             uint8_t* image_data = new uint8_t[width * height * 3];
             
             for(uint i = 0; i < width * height; ++i) {
@@ -69,7 +69,7 @@ class Camera {
                 image_data[i * 3 + 2] = b;
             }
 
-            write_png_file("./image.png", image_data);
+            write_png_file(filename, image_data);
 
             delete[] image_data;
         }
