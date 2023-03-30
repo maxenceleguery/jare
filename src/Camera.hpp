@@ -9,14 +9,24 @@
 class Camera {
     private:
         Vector<double> position;
+        Vector<double> orientation;
         uint width;
         uint height;
-        double fov;
+        double capteurWidth;
+        double capteurHeight;
+        double fov = 0.01;
         std::vector<Pixel> pixels;
 
     public:
         Camera();
-        Camera(Vector<double> pos, uint width0, uint height0) : position(pos), width(width0), height(height0), pixels(width0*height0) {};
+        Camera(Vector<double> pos, uint width0, uint height0) : position(pos), orientation(Vector<double>()), width(width0), height(height0), pixels(width0*height0) {
+            capteurWidth = (0.005*width0)/(1.*height0);
+            capteurHeight = 0.005;
+        };
+        Camera(Vector<double> pos, Vector<double> ori, uint width0, uint height0) : position(pos), orientation(ori), width(width0), height(height0), pixels(width0*height0) {
+            capteurWidth = (0.005*width0)/(1.*height0);
+            capteurHeight = 0.005;
+        };
         ~Camera();
 
         uint getWidth() const {
@@ -27,12 +37,38 @@ class Camera {
             return height;
         }
 
+        Vector<double> getPixelCoordOnCapt(uint w, uint h) const {
+            double W = (1.*w - width/2.)*(1.*capteurWidth/width);
+            double H = (-1.*h + height/2.)*(1.*capteurHeight/height);
+            return Vector<double>(0.,0.,1.)*H + (Vector<double>(0.,0.,1.).crossProduct(orientation).normalize())*W;
+        }
+
         Pixel getPixel(uint index) const {
             return pixels[index];
         }
 
-        void setPixel(uint index, Pixel& color) {
+        void setPixel(uint index, const Pixel& color) {
             pixels[index] = color;
+        }
+
+        Vector<double> getPosition() const {
+            return position;
+        }
+
+        void setPosition(const Vector<double>& pos) {
+            position=pos;
+        }
+
+        Vector<double> getOrientation() const {
+            return orientation;
+        }
+
+        void setOrientation(Vector<double>& ori) {
+            orientation=ori;
+        }
+
+        double getFov() const {
+            return fov;
         }
 
         void write_png_file(const char* filename, uint8_t* image_data) {

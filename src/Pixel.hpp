@@ -37,6 +37,18 @@ class Pixel {
         uint8_t getB() const {
             return b;
         }
+
+        void setR(uint8_t r0) {
+            r=r0;
+        }
+
+        void setG(uint8_t g0) {
+            g=g0;
+        } 
+
+        void setB(uint8_t b0) {
+            b=b0;
+        } 
 };
 
 

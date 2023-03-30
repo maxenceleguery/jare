@@ -281,7 +281,7 @@ ifeq ($(subst auto,,$(COMPILER_SUPPORT)),)
 	ifeq ($(STD),c)
 		COMPILER_SUPPORT := 11
 	else ifeq ($(STD),c++)
-		COMPILER_SUPPORT := 17
+		COMPILER_SUPPORT := 20
 		
 	endif
 endif

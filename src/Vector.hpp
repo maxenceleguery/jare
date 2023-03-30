@@ -41,6 +41,9 @@ class Vector {
         T getZ() const {
             return z;
         }
+        int size() const {
+            return 3;
+        }
 
         void printCoord() const {
             std::cout << "("
@@ -53,12 +56,25 @@ class Vector {
                         << std::endl;
         }
 
+        T normSquared() const {
+            return x*x + y*y + z*z;
+        }
+
         Vector<T> normalize() {
-            double invNorm = fast_inverse_square_root(x*x + y*y + z*z);
+            double invNorm = fast_inverse_square_root(normSquared());
             this->x*=invNorm;
             this->y*=invNorm;
             this->z*=invNorm;
             return *this;
+        }
+
+        Vector<T> normalize(const Vector<T>& vec) {
+            Vector<T> result = Vector(vec);
+            double invNorm = fast_inverse_square_root(normSquared());
+            result.x*=invNorm;
+            result.y*=invNorm;
+            result.z*=invNorm;
+            return result;
         }
 
         template<typename U>
@@ -79,6 +95,14 @@ class Vector {
 
         Vector<T> operator- () const {
             return Vector<T>(-x,-y,-z);
+        }
+
+        Vector<T> operator* (const T number) const {
+            return Vector<T>(x*number,y*number,z*number);
+        }
+
+        Vector<T> operator/ (const T number) const {
+            return Vector<T>(x/number,y/number,z/number);
         }
 
         Vector<T>& operator+= (const T nb) {
@@ -136,9 +160,21 @@ class Vector {
         }
 
         template <typename U>
+        bool operator != (const Vector<U>& vec) const {
+            return !(*this==vec);
+        }
+
+        template <typename U>
         Vector<U> crossProduct(const Vector<U>& vec2) const {
             if (std::is_same<T,U>::value) {
                 return Vector(y*vec2.getZ() - z*vec2.getY(),z*vec2.getX() - x*vec2.getZ(),x*vec2.getY() - y*vec2.getX());
+            }
+        }
+
+        template <typename U>
+        double getAngle(const Vector<U>& vec2) {
+            if (std::is_same<T,U>::value) {
+                return std::acos( normalize(*this)*normalize(vec2) );
             }
         }
 
