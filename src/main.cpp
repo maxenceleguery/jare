@@ -5,6 +5,7 @@
 #include "Environment.hpp"
 #include "Face.hpp"
 #include "Matrix.hpp"
+#include "Line.hpp"
 #include <omp.h>
 
 #include <string>
@@ -68,7 +69,7 @@ void testFace() {
 		std::cout << planeEq[i] << std::endl;
 	}
 
-	face.getIntersection(Vector<double>(0.5,0.,0.5),Vector<double>(0.,1.,0.)).printCoord();
+	face.getIntersection(Line(Vector<double>(0.5,0.,0.5),Vector<double>(0.,1.,0.))).printCoord();
 }
 
 void testMatrix() {
@@ -86,24 +87,69 @@ void testMatrix() {
 	(mat3.inverse()).print();
 }
 
+void testLine() {
+	Vector<double> vec1 = Vector(0.,1.,0.);
+	Vector<double> vec2 = Vector(1.,-1.,0.);
+	Vector<double> vec3 = Vector(0.,-2.,0.);
+	Vector<double> vec4 = Vector(1.,1.,0.);
+	Line l1 = Line(vec1,vec2);
+	Line l2 = Line(vec3,vec4);
+	std::cout << l1.IsIntersected(l2) << std::endl;
+}
+
+void testVector() {
+	Vector<double> vec1 = Vector(1.,1.,0.);
+	Vector<double> vec2 = Vector(1.,0.,0.);
+	std::cout << vec1.getAngle(vec2) << std::endl;
+}
+
 void firstRender() {
-	Vector<double> origine = Vector<double>(-2,0.,0.5);
-	Vector<double> orientation = Vector<double>(1,0,0);
-	Camera cam = Camera(origine,orientation,800,600);
+	Vector<double> origine = Vector<double>(-3,0.,1.5);
+	Vector<double> orientation = Vector<double>(1,0,-0.2);
+	Camera cam = Camera(origine,orientation,1280,720);
 	Environment env = Environment(&cam);
+
+	Vector<double> v1 = Vector(20.,20.,0.);
+	Vector<double> v2 = Vector(20.,-20.,0.);
+	Vector<double> v3 = Vector(-20.,-20.,0.);
+	Vector<double> v4 = Vector(-20.,20.,0.);
+	Face ground = Face(v1,Pixel(50,50,50));
+	ground.addVectex(v2);
+	ground.addVectex(v3);
+	ground.addVectex(v4);
+	env.addFace(ground);
 
 	Vector<double> vec1 = Vector(0.,0.,0.);
 	Vector<double> vec2 = Vector(0.,0.,1.);
 	Vector<double> vec3 = Vector(1.,1.,1.);
 	Vector<double> vec4 = Vector(1.,1.,0.);
-	//vec1/=3; vec2/=3; vec3/=3; vec4/=3;
-	Face face = Face(vec1,Pixel(255,0,0));
-	face.addVectex(vec2);
-	face.addVectex(vec3);
-	face.addVectex(vec4);
-	env.addFace(face);
+	Face face1 = Face(vec1,Pixel(255,0,0));
+	face1.addVectex(vec2);
+	face1.addVectex(vec3);
+	face1.addVectex(vec4);
+	env.addFace(face1);
 
-	for (uint i=0;i<20;i++) {
+	Vector<double> vec5 = Vector(0.,0.,0.);
+	Vector<double> vec6 = Vector(0.,0.,1.);
+	Vector<double> vec7 = Vector(1.,-1.,1.);
+	Vector<double> vec8 = Vector(1.,-1.,0.);
+	Face face2 = Face(vec5,Pixel(0,255,0));
+	face2.addVectex(vec6);
+	face2.addVectex(vec7);
+	face2.addVectex(vec8);
+	env.addFace(face2);
+
+	Vector<double> vec9 = Vector(0.,0.,1.);
+	Vector<double> vec10 = Vector(1.,-1.,1.);
+	Vector<double> vec11 = Vector(2.,0.,1.);
+	Vector<double> vec12 = Vector(1.,1.,1.);
+	Face face3 = Face(vec9,Pixel(0,0,255));
+	face3.addVectex(vec10);
+	face3.addVectex(vec11);
+	face3.addVectex(vec12);
+	env.addFace(face3);
+
+	for (uint i=0;i<40;i++) {
 		cam.setPosition(cam.getPosition()-Vector<double>(i/100.0,0.,0.));
 		env.addBackground(Pixel(0,0,0));
 		env.rayTrace();
@@ -126,6 +172,8 @@ int main() {
 	//testFace();
 	//renderFadeBlackToWhite();
 	//testMatrix();
+	//testLine();
+	//testVector();
 
 	firstRender();
 

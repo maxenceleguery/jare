@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Vector.hpp"
 #include "Pixel.hpp"
+#include "Line.hpp"
 #include <vector>
 #include <cmath>
 #include <numbers>
@@ -29,6 +30,15 @@ class Face {
 
         Vector<double> getNormalVector() const {
             return (vertices[1]-vertices[0]).crossProduct(vertices[2]-vertices[0]).normalize();
+        }
+
+        Vector<double> getBarycenter() const {
+            Vector<double> center = vertices[0];
+                for (uint i=1;i<vertices.size();i++) {
+                    center+=vertices[i];
+                }
+            center/=vertices.size();
+            return center;
         }
 
         bool isPlaneValid() const {
@@ -65,7 +75,7 @@ class Face {
             return false;
         }
 
-        bool isInPolygone(const Vector<double>& vec) {
+        bool isInPolygoneOld2(const Vector<double>& vec) {
             if (isOnPlane(vec)) {
                 double sumAngles = 0.;
                 for (uint i=0;i<vertices.size()-1;i++) {
@@ -73,13 +83,34 @@ class Face {
                     sumAngles+=(vertices[i]-vec).getAngle(vertices[i+1]-vec);
                 }
                 sumAngles+=(vertices[vertices.size()-1]-vec).getAngle(vertices[0]-vec);
-                //std::cout << sumAngles << std::endl;
-                if (std::abs(sumAngles - 2*std::numbers::pi) > 1 || std::isnan(sumAngles))
+                //if ( !std::isnan(sumAngles) )
+                    //std::cout << sumAngles << std::endl;
+                if ( sumAngles > std::numbers::pi)
                     return false;
                 else {
                     //std::cout << sumAngles << std::endl;
                     return true;
                 }
+            }
+            return false;
+        }
+
+        // Only works if face is convex :(
+        bool isInPolygone(const Vector<double>& vec) {
+            Vector<double> center = getBarycenter();
+            if (isOnPlane(vec) && isOnPlane(center) ) {
+                Line line0 = Line(center,vec-center);
+                uint counter = 0;
+                for (uint i=0;i<vertices.size()-1;i++) {
+                    Line line = Line(vertices[i],vertices[i+1]-vertices[i]);
+                    if (line0.IsIntersected(line))
+                        counter++;
+                }
+                Line line = Line(vertices[vertices.size()-1],vertices[0]-vertices[vertices.size()-1]);
+                if (line0.IsIntersected(line))
+                    counter++;
+                //std::cout << counter << std::endl;
+                return (counter%2 == 0);
             }
             return false;
         }
@@ -96,7 +127,9 @@ class Face {
             return planeEq;
         }
 
-        Vector<double> getIntersection(const Vector<double>& startingPoint, const Vector<double>& direction) {
+        Vector<double> getIntersection(const Line& line) {
+            Vector<double> startingPoint = line.getPoint();
+            Vector<double> direction = line.getDirection();
             Vector<double> normalVector = getNormalVector();
             double d = -normalVector*(vertices[0]);
             if (direction*normalVector != 0) {

@@ -2,6 +2,7 @@
 #include "Vector.hpp"
 #include "Camera.hpp"
 #include "Face.hpp"
+#include "Line.hpp"
 #include "omp.h"
 
 class Environment {
@@ -24,13 +25,15 @@ class Environment {
                 for(uint w = 0; w < cam->getWidth(); ++w) {
                     for (uint i = 0;i<faces.size();i++) {
                         Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h));
-                        Vector<double> intersectionPoint = faces[i].getIntersection(cam->getPosition(),direction);
+                        Line ray = Line(cam->getPosition(),direction);
+                        Vector<double> intersectionPoint = faces[i].getIntersection(ray);
                         //intersectionPoint.printCoord();
                         if (intersectionPoint != Vector(0.,0.,0.)) {
+                            //double distanceToCam = std::sqrt((intersectionPoint-cam->getPosition()).normSquared());
                             Pixel color = faces[i].getColor();
-                            //std::cout << (cam->getPosition()-intersectionPoint).normSquared()*(255-50)/(9.061-9.039) - 9.039*(255-50)/(9.061-9.039) + 50 << std::endl;
-                            color.setR( (cam->getPosition()-intersectionPoint).normSquared()*(255-50)/(9.061-9.039) - 9.039*(255-50)/(9.061-9.039) + 50);
-                            color.setR(255 - color.getR());
+                            //std::cout << distanceToCam << std::endl;
+                            //color.setR( (cam->getPosition()-intersectionPoint).normSquared()*(255-50)/(9.061-9.039) - 9.039*(255-50)/(9.061-9.039) + 50);
+                            //color.setR(255 - color.getR());
                             cam->setPixel(h*cam->getWidth()+w, color);
                             //std::cout << w << " " << h << std::endl;
                         }

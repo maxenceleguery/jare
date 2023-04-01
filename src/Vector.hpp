@@ -154,7 +154,7 @@ class Vector {
         template <typename U>
         bool operator == (const Vector<U>& vec) const {
             if (std::is_same<T,U>::value) {
-                return std::abs(x-vec.getX()) < 1E-5 && std::abs(y-vec.getY()) < 1E-5 && std::abs(z-vec.getZ()) < 1E-5;
+                return std::abs(x-vec.getX()) < 1E-3 && std::abs(y-vec.getY()) < 1E-3 && std::abs(z-vec.getZ()) < 1E-3;
             }
             return false;
         }
@@ -174,6 +174,9 @@ class Vector {
         template <typename U>
         double getAngle(const Vector<U>& vec2) {
             if (std::is_same<T,U>::value) {
+                if (std::abs(normalize(*this)*normalize(vec2))>1) {
+                    return 0.;
+                }
                 return std::acos( normalize(*this)*normalize(vec2) );
             }
         }

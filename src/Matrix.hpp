@@ -35,6 +35,11 @@ class Matrix {
                 a31=0.; a32=0.; a33=0.;
             }
         };
+        Matrix(Vector<double> vec1, Vector<double> vec2, Vector<double> vec3) {
+            a11=vec1.getX(); a12=vec2.getX(); a13=vec3.getX();
+            a21=vec1.getY(); a22=vec2.getY(); a23=vec3.getY();
+            a31=vec1.getZ(); a32=vec2.getZ(); a33=vec3.getZ();
+        }
         ~Matrix(){};
 
         Matrix<T> operator + (const Matrix<T>& mat) const {
@@ -116,6 +121,33 @@ class Matrix {
             return result;
         }
 
+        T operator [](int index) const {
+            switch (index) {
+            case 0:
+                return a11;
+            case 1:
+                return a12;
+            case 2:
+                return a13;
+            case 3:
+                return a21;
+            case 4:
+                return a22;
+            case 5:
+                return a23;
+            case 6:
+                return a31;
+            case 7:
+                return a32;
+            case 8:
+                return a33;
+            
+            default:
+                std::cout << "Index out of range" << std::endl;
+                return -1;
+            }
+        }
+
         T trace() const {
             return a11+a22+a33;
         }
@@ -132,9 +164,12 @@ class Matrix {
             return det;
         }
 
+        bool isInversible() const {
+            return (std::abs(det()) > 1E-5);
+        }
+
         Matrix<T> inverse() const {
-            T determinant = det();
-            if ( (std::abs(determinant) > 1E-5) ) {
+            if ( isInversible() ) {
                 Matrix<T> transp = transpose();
                 Matrix<T> inv;
                 inv.a11 = transp.a22*transp.a33 - transp.a23*transp.a32;
@@ -146,7 +181,7 @@ class Matrix {
                 inv.a31 = (transp.a12*transp.a23 - transp.a22*transp.a13);
                 inv.a32 = -(transp.a11*transp.a23 - transp.a21*transp.a13);
                 inv.a33 = (transp.a11*transp.a22 - transp.a21*transp.a12);
-                return inv/determinant;
+                return inv/det();
             }
             return Matrix<T>();
         }
