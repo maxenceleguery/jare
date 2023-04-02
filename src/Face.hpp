@@ -3,6 +3,8 @@
 #include "Vector.hpp"
 #include "Pixel.hpp"
 #include "Line.hpp"
+#include "Material.hpp"
+
 #include <vector>
 #include <cmath>
 #include <numbers>
@@ -10,18 +12,28 @@
 class Face {
     private:
         std::vector<Vector<double>> vertices;
-        Pixel color;
+        Material material;
 
     public:
         Face() : vertices(1) {};
-        Face(std::vector<Vector<double>>& vertices0, Pixel color0) : vertices(vertices0), color(color0) {};
-        Face(Vector<double>& vec0, Pixel color0) : vertices(1), color(color0) {
+        Face(std::vector<Vector<double>>& vertices0, Pixel color0) : vertices(vertices0) {
+            material = Material(color0);
+        };
+        Face(Vector<double>& vec0, Pixel color0) : vertices(1), material(color0) {
+            vertices[0]=vec0;
+            material = Material(color0);
+        };
+        Face(Vector<double>& vec0, Material mat0) : vertices(1), material(mat0) {
             vertices[0]=vec0;
         };
         ~Face();
 
-        Pixel getColor() const {
-            return color;
+        Material getMaterial() const {
+            return material;
+        }
+
+        void setMaterial(const Material mat) {
+            material=mat;
         }
 
         void addVectex(const Vector<double>& vec) {
@@ -135,9 +147,13 @@ class Face {
             if (direction*normalVector != 0) {
                 double k = (-d - normalVector*startingPoint)/(direction*normalVector);
                 Vector<double> intersectionPoint = startingPoint + direction*k;
-                //intersectionPoint.printCoord();
-                if (isInPolygone(intersectionPoint) && k>1E-7)
+                if (isInPolygone(intersectionPoint) && k>1E-7) {
+                    for (uint i=0;i<vertices.size();i++) {
+                        if (intersectionPoint==vertices[i])
+                            return Vector<double>();
+                    }
                     return intersectionPoint;
+                }
             }
             return Vector<double>();
         }

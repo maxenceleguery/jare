@@ -149,10 +149,25 @@ void firstRender() {
 	face3.addVectex(vec12);
 	env.addFace(face3);
 
-	for (uint i=0;i<40;i++) {
+	Material light = Material(Pixel(255,255,255));
+	light.setEmissionStrengh(1.);
+	Vector<double> vec13 = Vector(0.,0.,0.) + Vector(0.,-1.5,0.);
+	Vector<double> vec14 = Vector(0.,0.,1.) + Vector(0.,-1.5,0.);
+	Vector<double> vec15 = Vector(2.,0.,1.) + Vector(0.,-1.5,0.);
+	Vector<double> vec16 = Vector(2.,0.,0.) + Vector(0.,-1.5,0.);
+	Face face4 = Face(vec13,light);
+	face4.addVectex(vec14);
+	face4.addVectex(vec15);
+	face4.addVectex(vec16);
+	env.addFace(face4);
+
+	uint numberImage=10;
+	for (uint i=0;i<numberImage;i++) {
+		if (i%10==0)
+			std::cout << "Rendering image N° " << i << "/" << numberImage << std::endl;
 		cam.setPosition(cam.getPosition()-Vector<double>(i/100.0,0.,0.));
 		env.addBackground(Pixel(0,0,0));
-		env.rayTrace();
+		env.render();
 		std::string name = "./render2/image";
 		std::string format = ".png";
 		name.append(std::to_string(i));

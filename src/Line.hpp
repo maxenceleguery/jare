@@ -20,6 +20,14 @@ class Line {
             return direction;
         } 
 
+        void setPoint(const Vector<double>& p) {
+            point=p;
+        } 
+
+        void setDirection(const Vector<double>& d) {
+            direction=d;
+        } 
+
         bool IsIntersected(Line& line) {
             Vector<double> M = Vector<double>(point);
             Vector<double> N = Vector<double>(line.point);
@@ -31,13 +39,7 @@ class Line {
             mat=mat.inverse();
             mat=mat*(Matrix<double>(v,-u,Vector<double>()).transpose());
             Vector<double> K = mat*(M-N);
-            //std::cout << "K : ";
-            //K.printCoord();
-            double k1=K.getY();
-            double k2=K.getX();
-            /*std::cout << "Intersection : " << std::endl;
-            (M+u*k1).printCoord();
-            (N+v*k2).printCoord();*/
+            double k1=K.getY(); double k2=K.getX();
             return (M+u*k1)==(N+v*k2) && 1E-7<k1 && k1<1-1E-7 && 1E-7<k2 && k2<1-1E-7;
         }
 };

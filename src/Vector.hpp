@@ -3,6 +3,8 @@
 #include <cstring>
 #include <cmath>
 
+#include "Pixel.hpp"
+
 template<typename T>
 class Vector {
 
@@ -29,6 +31,7 @@ class Vector {
     public:
         Vector() : x((T)0), y((T)0), z((T)0) {};
         Vector(T x0, T y0, T z0) : x(x0), y(y0), z(z0) {};
+        explicit Vector(Pixel pixel) : x(pixel.getR()), y(pixel.getG()), z(pixel.getB()) {};
         //Vector(Vector<T>& vec) : x(vec.x), y(vec.y), z(vec.z) {};
         ~Vector(){};
 
@@ -162,6 +165,13 @@ class Vector {
         template <typename U>
         bool operator != (const Vector<U>& vec) const {
             return !(*this==vec);
+        }
+
+        template <typename U>
+        Vector<U> productTermByTerm(const Vector<U>& vec2) const {
+            if (std::is_same<T,U>::value) {
+                return Vector(x*vec2.getX(), y*vec2.getY(), z*vec2.getZ());
+            }
         }
 
         template <typename U>

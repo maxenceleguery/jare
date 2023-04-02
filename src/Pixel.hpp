@@ -20,7 +20,7 @@ class Pixel {
             /*if (r0 > 255 || g0 > 255 || b0 > 255 || a0 > 255)
                 throw std::invalid_argument("Pixel's values must be between 0 and 255");*/
         };
-        ~Pixel();
+        ~Pixel() {};
 
         void renderPixel(std::ofstream& imageFlux) const {
             imageFlux << r << " " << g << " " << b << " ";
@@ -49,8 +49,15 @@ class Pixel {
         void setB(uint8_t b0) {
             b=b0;
         } 
+
+        Pixel& operator*= (const Pixel& p) {
+            this->r *= p.r;
+            this->g *= p.g;
+            this->b *= p.b;
+            return *this;
+        }
+
+        Pixel operator/ (const double number) const {
+            return Pixel(r/number,g/number,b/number);
+        }
 };
-
-
-Pixel::~Pixel() {
-}
