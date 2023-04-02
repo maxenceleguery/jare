@@ -20,6 +20,10 @@ $ make all
 $ build/main
 ```
 
-Resulting image : image.png
+## Some results
+
+![Simple render of cube](/cube.png)
+
+![Raytraced render of cube](/cube2.png)
 
 Maxence Leguéry
