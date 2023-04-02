@@ -3,7 +3,13 @@
 #include "Camera.hpp"
 #include "Face.hpp"
 #include "Line.hpp"
+
+#include <stdlib.h>
+#include <time.h>
 #include "omp.h"
+
+#define SIMPLE_RENDER 1000
+#define RAYTRACING 1001
 
 struct Hit {
     Material mat;
@@ -19,16 +25,17 @@ class Environment {
         Camera* cam;
         std::vector<Face> faces;
         uint maxBounce = 5;
+        uint samples = 1;
         Pixel backgroundColor = Pixel(0,0,0);
+        uint mode = RAYTRACING;
 
         double randomValue(uint state) const {
-            state*=747796405 + 2891336453;
-            uint result = ((state>>((state>>28)+4))^state)*277803737;
-            result=(result>>22)^result;
-            return result/4294967295.0;
+            srand(time(NULL)*state);
+            double result = (rand() % 10)/10.;
+            return result;
         }
 
-        double randomValueNormalDistribution(uint state) const {
+        double randomValueNormalDistribution(uint state) const { 
             double theta = 2 * std::numbers::pi * randomValue(state);
             double rho = std::sqrt(-2*std::log(randomValue(state*state)));
             return rho*std::cos(theta);
@@ -96,20 +103,21 @@ class Environment {
 
         Pixel rayTrace2(Line& ray, uint state) {
             Vector<double> incomingLight = Vector<double>();
-            Pixel rayColor = Pixel(255,255,255);
+            Vector<double> rayColor = Vector<double>(1.,1.,1.);
             for (uint bounce=0;bounce<maxBounce;bounce++) {
                 Hit hit = simpleTrace(ray);
                 if (hit.hasHit) {
                     ray.setPoint(hit.point);
                     ray.setDirection(getDiffusionDirection(hit.normal,state));
-                    incomingLight += (Vector<double>(hit.mat.getColor()) * hit.mat.getEmissionStrengh()).productTermByTerm(Vector<double>(rayColor));
-                    rayColor *= hit.mat.getColor();
+                    Vector<double> emittedLight = hit.mat.getColor().toVector() * hit.mat.getEmissionStrengh();
+                    incomingLight += emittedLight.productTermByTerm(rayColor);
+                    rayColor = rayColor.productTermByTerm(hit.mat.getColor().toVector())*(hit.normal*ray.getDirection());
 
                 } else {
                     break;
                 }
             }
-            Pixel finalColor = Pixel(incomingLight.getX(),incomingLight.getY(),incomingLight.getZ());
+            Pixel finalColor = Pixel(incomingLight);
             return finalColor;
         }
 
@@ -118,10 +126,18 @@ class Environment {
             for(uint h = 0; h < cam->getHeight(); ++h) {
                 #pragma omp parallel for num_threads(omp_get_num_devices())
                 for(uint w = 0; w < cam->getWidth(); ++w) {
-                    Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h));
+                    Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                     Line ray = Line(cam->getPosition(),direction);
-                    //Pixel color = rayTrace1(ray);
-                    Pixel color = rayTrace2(ray,h*w);
+                    Pixel color;
+                    Vector<double> colorVec;
+                    if (mode==SIMPLE_RENDER) 
+                        color = rayTrace1(ray);
+                    else if (mode==RAYTRACING) {
+                        for (uint i=0;i<samples;i++)
+                            colorVec += rayTrace2(ray,h*w).toVector();
+                        colorVec/=samples;
+                        color=Pixel(colorVec);
+                    }
                     cam->setPixel(h*cam->getWidth()+w, color);
                 }
             }

@@ -1,4 +1,5 @@
 #pragma once
+#include "Vector.hpp"
 #include <cstdint>
 #include <iostream>
 #include <fstream>
@@ -20,6 +21,8 @@ class Pixel {
             /*if (r0 > 255 || g0 > 255 || b0 > 255 || a0 > 255)
                 throw std::invalid_argument("Pixel's values must be between 0 and 255");*/
         };
+        // Vector values has to be between 0 and 1
+        Pixel(const Vector<double>& vec0) : r(vec0.getX()*255), g(vec0.getY()*255), b(vec0.getZ()*255) {};
         ~Pixel() {};
 
         void renderPixel(std::ofstream& imageFlux) const {
@@ -59,5 +62,9 @@ class Pixel {
 
         Pixel operator/ (const double number) const {
             return Pixel(r/number,g/number,b/number);
+        }
+
+        Vector<double> toVector() const {
+            return Vector<double>(r,g,b)/255;
         }
 };

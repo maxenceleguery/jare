@@ -164,6 +164,12 @@ class Face {
                 vertices[i].printCoord();
             }
         }
+
+        void move(const Vector<double>& vec) {
+            for (uint i=0;i<vertices.size();i++) {
+                vertices[i] += vec;
+            }
+        }
 };
 
 

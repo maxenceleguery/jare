@@ -3,8 +3,6 @@
 #include <cstring>
 #include <cmath>
 
-#include "Pixel.hpp"
-
 template<typename T>
 class Vector {
 
@@ -31,7 +29,7 @@ class Vector {
     public:
         Vector() : x((T)0), y((T)0), z((T)0) {};
         Vector(T x0, T y0, T z0) : x(x0), y(y0), z(z0) {};
-        explicit Vector(Pixel pixel) : x(pixel.getR()), y(pixel.getG()), z(pixel.getB()) {};
+        //explicit Vector(Pixel pixel) : x(pixel.getR()), y(pixel.getG()), z(pixel.getB()) {};
         //Vector(Vector<T>& vec) : x(vec.x), y(vec.y), z(vec.z) {};
         ~Vector(){};
 
@@ -190,6 +188,4 @@ class Vector {
                 return std::acos( normalize(*this)*normalize(vec2) );
             }
         }
-
-
 };
