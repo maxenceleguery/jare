@@ -24,7 +24,7 @@ class Environment {
     private:
         Camera* cam;
         std::vector<Face> faces;
-        uint maxBounce = 5;
+        uint maxBounce = 3;
         uint samples = 1;
         Pixel backgroundColor = Pixel(0,0,0);
         uint mode = RAYTRACING;
