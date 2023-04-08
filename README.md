@@ -1,6 +1,7 @@
 # 3D Render Engine
 
 3D render engine project in C++.
+Require a Nvidia graphic card to use CUDA acceleration.
 
 ## Dependencies
 
@@ -25,6 +26,8 @@ $ build/main
 
 ![Simple render of cube](/cube.png)
 
-![Raytraced render of cube](/cube2.png)
+![Raytraced render of cube](/cube3.png)
+
+CUDA render almost 40 times faster than classic CPU render
 
 Maxence Leguéry
