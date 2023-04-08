@@ -2,6 +2,8 @@
 #include <iostream>
 #include "Pixel.hpp"
 
+#include <cuda_runtime.h>
+
 class Material {
     private:
         Pixel emissionColor;
@@ -9,35 +11,35 @@ class Material {
         double reflexion;
         double emissionStrengh = 0.;
     public:
-        Material() : emissionColor(Pixel(0,0,0)), diffusion(0), reflexion(0) {};
-        Material(Pixel color0) : emissionColor(color0), diffusion(0), reflexion(0) {};
-        ~Material() {};
+        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), diffusion(0), reflexion(0) {};
+        __host__ __device__ Material(Pixel color0) : emissionColor(color0), diffusion(0), reflexion(0) {};
+        __host__ __device__ ~Material() {};
 
-    Pixel getColor() const {
+    __host__ __device__ Pixel getColor() const {
         return emissionColor;
     }
-    void setColor(const Pixel color) {
+    __host__ __device__ void setColor(const Pixel color) {
         emissionColor=color;
     }
 
-    double getDiffusion() const {
+    __host__ __device__ double getDiffusion() const {
         return diffusion;
     }
-    void setDiffusion(const double d) {
+    __host__ __device__ void setDiffusion(const double d) {
         diffusion=d;
     }
 
-    double getReflexion() const {
+    __host__ __device__ double getReflexion() const {
         return reflexion;
     }
-    void setReflexion(const double r) {
+    __host__ __device__ void setReflexion(const double r) {
         reflexion=r;
     }
 
-    double getEmissionStrengh() const {
+    __host__ __device__ double getEmissionStrengh() const {
         return emissionStrengh;
     }
-    void setEmissionStrengh(const double s) {
+    __host__ __device__ void setEmissionStrengh(const double s) {
         emissionStrengh=s;
     }
 };

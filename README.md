@@ -6,6 +6,7 @@
 
 ```bash
 $ sudo apt install libpng-dev
+$ sudo apt install nvidia-cuda-toolkit
 ```
 
 ## Compilation

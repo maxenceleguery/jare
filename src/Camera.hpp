@@ -18,7 +18,7 @@ class Camera {
         std::vector<Pixel> pixels;
 
     public:
-        Camera();
+        Camera(){};
         Camera(Vector<double> pos, uint width0, uint height0) : position(pos), orientation(Vector<double>()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
@@ -27,9 +27,9 @@ class Camera {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
-        ~Camera();
+        ~Camera() {};
 
-        uint getWidth() const {
+        inline uint getWidth() const {
             return width;
         }
 
@@ -37,13 +37,13 @@ class Camera {
             return height;
         }
 
-        Vector<double> getPixelCoordOnCapt(uint w, uint h) const {
+        Vector<double> getPixelCoordOnCapt(double w, double h) const {
             double W = (1.*w - width/2.)*(1.*capteurWidth/width);
             double H = (-1.*h + height/2.)*(1.*capteurHeight/height);
             return Vector<double>(0.,0.,1.)*H + (Vector<double>(0.,0.,1.).crossProduct(orientation).normalize())*W;
         }
 
-        Pixel getPixel(uint index) const {
+        inline Pixel getPixel(uint index) const {
             return pixels[index];
         }
 
@@ -51,7 +51,7 @@ class Camera {
             pixels[index] = color;
         }
 
-        Vector<double> getPosition() const {
+        inline Vector<double> getPosition() const {
             return position;
         }
 
@@ -59,7 +59,7 @@ class Camera {
             position=pos;
         }
 
-        Vector<double> getOrientation() const {
+        inline Vector<double> getOrientation() const {
             return orientation;
         }
 
@@ -67,7 +67,7 @@ class Camera {
             orientation=ori;
         }
 
-        double getFov() const {
+        inline double getFov() const {
             return fov;
         }
 
@@ -110,7 +110,3 @@ class Camera {
             delete[] image_data;
         }
 };
-
-Camera::~Camera() {
-
-}

@@ -3,32 +3,34 @@
 #include "Vector.hpp"
 #include "Matrix.hpp"
 
+#include <cuda_runtime.h>
+
 class Line {
-    private:
+    protected:
         Vector<double> point;
         Vector<double> direction;
     public:
-        Line(){};
-        Line(Vector<double> point0, Vector<double> direction0) : point(point0), direction(direction0) {};
-        ~Line(){};
+        __host__ __device__ Line(){};
+        __host__ __device__ Line(Vector<double> point0, Vector<double> direction0) : point(point0), direction(direction0) {};
+        __host__ __device__ ~Line(){};
 
-        Vector<double> getPoint() const {
+        __host__ __device__ Vector<double> getPoint() const {
             return point;
         } 
 
-        Vector<double> getDirection() const {
+        __host__ __device__ Vector<double> getDirection() const {
             return direction;
         } 
 
-        void setPoint(const Vector<double>& p) {
+        __host__ __device__ void setPoint(const Vector<double>& p) {
             point=p;
         } 
 
-        void setDirection(const Vector<double>& d) {
+        __host__ __device__ void setDirection(const Vector<double>& d) {
             direction=d;
         } 
 
-        bool IsIntersected(Line& line) {
+        __host__ __device__ bool IsIntersected(Line& line) {
             Vector<double> M = Vector<double>(point);
             Vector<double> N = Vector<double>(line.point);
             Vector<double> u = Vector<double>(direction);

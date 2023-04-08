@@ -6,9 +6,13 @@
 #include "Face.hpp"
 #include "Matrix.hpp"
 #include "Line.hpp"
-#include <omp.h>
 
+#include <cuda_runtime.h>
+#include "RayTrace.cuh"
+
+#include <omp.h>
 #include <string>
+#include <chrono>
 
 void testCam() {
 	Vector<double> origine = Vector<double>(-2.,0.5,0.5);
@@ -64,10 +68,10 @@ void testFace() {
 	else
 		std::cout << "Point not in polygone" << std::endl;
 
-	std::vector<double> planeEq = face.getPlaneEquation();
+	/*std::vector<double> planeEq = face.getPlaneEquation();
 	for (uint i=0;i<planeEq.size();i++) {
 		std::cout << planeEq[i] << std::endl;
-	}
+	}*/
 
 	face.getIntersection(Line(Vector<double>(0.5,0.,0.5),Vector<double>(0.,1.,0.))).printCoord();
 }
@@ -104,16 +108,19 @@ void testVector() {
 }
 
 void firstRender() {
-	Vector<double> origine = Vector<double>(-3,0.,1.5);
+	Vector<double> origine = Vector<double>(-3.,0.,1.5);
 	Vector<double> orientation = Vector<double>(1,0,-0.2);
 	Camera cam = Camera(origine,orientation,1280,720);
 	Environment env = Environment(&cam);
+
+	Material light = Material(Pixel(255,255,255));
+	light.setEmissionStrengh(1.);
 
 	Vector<double> v1 = Vector(20.,20.,0.);
 	Vector<double> v2 = Vector(20.,-20.,0.);
 	Vector<double> v3 = Vector(-20.,-20.,0.);
 	Vector<double> v4 = Vector(-20.,20.,0.);
-	Face ground = Face(v1,Pixel(50,50,50));
+	Face ground = Face(v1,light);
 	ground.addVectex(v2);
 	ground.addVectex(v3);
 	ground.addVectex(v4);
@@ -149,8 +156,6 @@ void firstRender() {
 	face3.addVectex(vec12);
 	env.addFace(face3);
 
-	Material light = Material(Pixel(255,255,255));
-	light.setEmissionStrengh(1.);
 	Vector<double> vec13 = Vector(0.,0.,0.) + Vector(0.,-1.5,0.);
 	Vector<double> vec14 = Vector(0.,0.,2.) + Vector(0.,-1.5,0.);
 	Vector<double> vec15 = Vector(2.,0.,2.) + Vector(0.,-1.5,0.);
@@ -165,21 +170,28 @@ void firstRender() {
 	face5.move(Vector<double>(0.,3.,0.));
 	env.addFace(face5);
 
-	uint numberImage=4;
+	uint numberImage=2;
+	auto start = std::chrono::steady_clock::now();
+
 	for (uint i=0;i<numberImage;i++) {
 		if (i%1==0)
 			std::cout << "Rendering image N° " << i+1 << "/" << numberImage << std::endl;
 		cam.setPosition(cam.getPosition()-Vector<double>(i/100.0,0.,0.));
 		env.addBackground(Pixel(0,0,0));
-		env.render();
+		//env.render();
+		env.renderCuda();
 		std::string name = "./render2/image";
 		std::string format = ".png";
 		name.append(std::to_string(i));
 		name.append(format);
 		cam.renderImage(name.c_str());
 	}
+
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "Elapsed time per image (render + png writing): " << elapsed_seconds.count()/numberImage << "s\n";
 }
- 
+
 int main() { 
 	Pixel red = Pixel(255,0,0);
 	Pixel green = Pixel(0,255,0);
@@ -193,7 +205,7 @@ int main() {
 	//testMatrix();
 	//testLine();
 	//testVector();
-
+	
 	firstRender();
 
 	return EXIT_SUCCESS; 

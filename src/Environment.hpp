@@ -2,145 +2,154 @@
 #include "Vector.hpp"
 #include "Camera.hpp"
 #include "Face.hpp"
+#include "FaceCuda.hpp"
 #include "Line.hpp"
+#include "Ray.hpp"
+#include "RayTrace.cuh"
 
 #include <stdlib.h>
 #include <time.h>
 #include "omp.h"
 
+#include <cuda_runtime.h>
+
 #define SIMPLE_RENDER 1000
 #define RAYTRACING 1001
 
-struct Hit {
-    Material mat;
-    Vector<double> point;
-    Vector<double> normal;
-    double distance = 1E50;
-    bool hasHit = false;
-};
-
+#define cudaErrorCheck(call){cudaAssert(call,__FILE__,__LINE__);}
 
 class Environment {
+    public:
+        using Faces = std::vector<Face>;
     private:
         Camera* cam;
-        std::vector<Face> faces;
-        uint maxBounce = 3;
-        uint samples = 1;
+        Faces faces;
+        uint samples = 5;
         Pixel backgroundColor = Pixel(0,0,0);
         uint mode = RAYTRACING;
-
-        double randomValue(uint state) const {
-            srand(time(NULL)*state);
-            double result = (rand() % 10)/10.;
-            return result;
-        }
-
-        double randomValueNormalDistribution(uint state) const { 
-            double theta = 2 * std::numbers::pi * randomValue(state);
-            double rho = std::sqrt(-2*std::log(randomValue(state*state)));
-            return rho*std::cos(theta);
-        }
-
-        Vector<double> randomDirection(uint state) const {
-            double x;  double y;  double z;
-            do {
-                x = randomValueNormalDistribution(state);
-                y = randomValueNormalDistribution(state*42);
-                z = randomValueNormalDistribution(state*77);
-            } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
-            return Vector<double>(x,y,z).normalize();
-        }
-
-        int sign(double number) const {
-            if (number<0.)
-                return -1;
-            else if (number>0.)
-                return 1;
-            else
-                return 0;
-        }
 
     public:
         Environment(): faces(1) {};
         Environment(Camera* cam0) : cam(cam0), faces(1) {};
-        ~Environment();
+        ~Environment() {};
 
         void addFace(Face& face) {
             faces.push_back(face);
         }
 
-        Vector<double> getDiffusionDirection(const Vector<double>& normal, uint state) const {
-            Vector<double> dir = randomDirection(state);
-            return dir*sign(dir*normal);
-        }
-
-        Hit simpleTrace(Line& ray) {
-            Hit hit;
-            for (uint i = 0;i<faces.size();i++) {
-                Vector<double> intersectionPoint = faces[i].getIntersection(ray);
-                double distance = std::sqrt((intersectionPoint-ray.getPoint()).normSquared());
-                if (intersectionPoint != Vector(0.,0.,0.) && distance<hit.distance) {
-                    hit.distance = distance;
-                    hit.mat = faces[i].getMaterial();
-                    hit.point=intersectionPoint;
-                    hit.normal=faces[i].getNormalVector();
-                    hit.hasHit=true;
-                    //double distanceToCam = std::sqrt((intersectionPoint-cam->getPosition()).normSquared());
-                    //color.setR( (cam->getPosition()-intersectionPoint).normSquared()*(255-50)/(9.061-9.039) - 9.039*(255-50)/(9.061-9.039) + 50);
-                    //color.setR(255 - color.getR());
-                }
-            }
-            return hit;
-        }
-
-        Pixel rayTrace1(Line& ray) {
-            Hit hit = simpleTrace(ray);
-            if (hit.hasHit)
-                return hit.mat.getColor();
-            else
-                return backgroundColor;
-        }
-
-        Pixel rayTrace2(Line& ray, uint state) {
-            Vector<double> incomingLight = Vector<double>();
-            Vector<double> rayColor = Vector<double>(1.,1.,1.);
-            for (uint bounce=0;bounce<maxBounce;bounce++) {
-                Hit hit = simpleTrace(ray);
-                if (hit.hasHit) {
-                    ray.setPoint(hit.point);
-                    ray.setDirection(getDiffusionDirection(hit.normal,state));
-                    Vector<double> emittedLight = hit.mat.getColor().toVector() * hit.mat.getEmissionStrengh();
-                    incomingLight += emittedLight.productTermByTerm(rayColor);
-                    rayColor = rayColor.productTermByTerm(hit.mat.getColor().toVector())*(hit.normal*ray.getDirection());
-
-                } else {
-                    break;
-                }
-            }
-            Pixel finalColor = Pixel(incomingLight);
-            return finalColor;
-        }
+        void addObj(const std::string name) {
+            std::cout << "Loading " << name.c_str() << std::endl;
+            std::string path = std::string("./models/");
+            std::ifstream monFlux((path+name).c_str());
+            std::string ligne;
+            getline(monFlux, ligne);
+            std::cout << ligne << std::endl;
+            
+        }        
 
         void render() {
+            uint H = cam->getHeight();
+            uint W = cam->getWidth();
             #pragma omp parallel for num_threads(omp_get_num_devices())
-            for(uint h = 0; h < cam->getHeight(); ++h) {
+            for(uint h = 0; h < H; ++h) {
                 #pragma omp parallel for num_threads(omp_get_num_devices())
-                for(uint w = 0; w < cam->getWidth(); ++w) {
-                    Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
-                    Line ray = Line(cam->getPosition(),direction);
+                for(uint w = 0; w < W; ++w) {
                     Pixel color;
                     Vector<double> colorVec;
-                    if (mode==SIMPLE_RENDER) 
-                        color = rayTrace1(ray);
+                    if (mode==SIMPLE_RENDER) {
+                        Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                        Ray ray = Ray(cam->getPosition(),direction);
+
+                        color = ray.rayTrace1(faces, backgroundColor);
+                    }
                     else if (mode==RAYTRACING) {
-                        for (uint i=0;i<samples;i++)
-                            colorVec += rayTrace2(ray,h*w).toVector();
-                        colorVec/=samples;
+                        Vector<double> vectTmp;
+                        samples = 4; // has to be a perfect square
+                        int samplesSqrt=(int)std::sqrt(samples);
+                        
+                        double dy=-(samplesSqrt-1)/2.;
+                        do {
+                            double dx=-(samplesSqrt-1)/2.;
+                            do {
+                                Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Ray ray = Ray(cam->getPosition(),direction);
+
+                                vectTmp = (ray.rayTrace2(faces, h*w)).toVector();
+
+                                colorVec += vectTmp;
+                                dx++;
+                            } while (dx<(samplesSqrt-1)/2);
+                            dy++;
+                        } while (dy<(samplesSqrt-1)/2.);
+                        colorVec/=(samples/2);
                         color=Pixel(colorVec);
                     }
-                    cam->setPixel(h*cam->getWidth()+w, color);
+                    cam->setPixel(h*W+w, color);
                 }
             }
+        }
+
+        void renderCuda() {
+            uint H = cam->getHeight();
+            uint W = cam->getWidth();
+
+            uint nbFaces = faces.size();
+            FaceCuda* faces_ptr = new FaceCuda[nbFaces];
+            for (uint i=0;i<nbFaces;i++) {
+                std::vector<Vector<double>> vertices = faces[i].getVertices();
+
+                uint nbVertices = vertices.size();
+
+                Vector<double>* d_vertices;
+                cudaErrorCheck(cudaMalloc(&d_vertices,nbVertices*sizeof(Vector<double>)));
+                cudaErrorCheck(cudaMemcpy(d_vertices, vertices.data(), nbVertices*sizeof(Vector<double>), cudaMemcpyHostToDevice));
+                faces_ptr[i].setvertices(d_vertices);
+                faces_ptr[i].setNbVertices(nbVertices);
+                faces_ptr[i].setMaterial(faces[i].getMaterial());
+            }
+
+            FaceCuda* d_faces;
+            cudaErrorCheck(cudaMalloc(&d_faces,nbFaces*sizeof(FaceCuda)));
+            cudaErrorCheck(cudaMemcpy(d_faces, faces_ptr, nbFaces*sizeof(FaceCuda), cudaMemcpyHostToDevice));
+
+            Pixel* colors = new Pixel[W * H];
+            Pixel* d_colors;
+            cudaErrorCheck(cudaMalloc(&d_colors, H*W*sizeof(Pixel)));
+            cudaErrorCheck(cudaMemcpy(d_colors, colors, H*W*sizeof(Pixel), cudaMemcpyHostToDevice));
+
+            Ray* rays = new Ray[W * H];
+            Ray* d_rays;
+            for(uint h = 0; h < H; ++h) {
+                for(uint w = 0; w < W; ++w) {
+                    Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                    rays[h*W+w] = Ray(cam->getPosition(),direction);
+                }
+            }
+            cudaErrorCheck(cudaMalloc(&d_rays, H*W*sizeof(Ray)));
+            cudaErrorCheck(cudaMemcpy(d_rays, rays, H*W*sizeof(Ray), cudaMemcpyHostToDevice));
+            delete[] rays;
+
+            int blocksize = 256;
+            int nblocks = H*W / blocksize;
+
+            rayTrace3(d_rays,d_faces,d_colors,nbFaces,nblocks,blocksize,W,H);
+
+            cudaErrorCheck(cudaMemcpy(colors, d_colors, H*W*sizeof(Pixel), cudaMemcpyDeviceToHost));
+            cudaErrorCheck(cudaFree(d_colors));
+            for (uint i=0;i<nbFaces;i++) {
+                cudaErrorCheck(cudaFree(faces_ptr[i].getVertices()));
+            }
+            cudaErrorCheck(cudaFree(d_faces));
+            cudaErrorCheck(cudaFree(d_rays));
+
+            delete[] faces_ptr;
+
+            for(uint h = 0; h < H; ++h) {
+                for(uint w = 0; w < W; ++w) {
+                    cam->setPixel(h*W+w, colors[h*W+w]);
+                }
+            }
+            delete[] colors;
         }
 
         void addBackground(const Pixel& color) {
@@ -150,7 +159,3 @@ class Environment {
                     cam->setPixel(h*cam->getWidth()+w, color);
         }
 };
-
-
-Environment::~Environment() {
-}
