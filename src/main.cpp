@@ -113,62 +113,29 @@ void firstRender() {
 	Camera cam = Camera(origine,orientation,1280,720);
 	Environment env = Environment(&cam);
 
+	Pixel red = Pixel(255,0,0);
+	Pixel green = Pixel(0,255,0);
+	Pixel blue = Pixel(0,0,255);
+	Pixel yellow = Pixel(255,255,0);
+	Pixel cyan = Pixel(0,255,255);
+	Pixel magenta = Pixel(255,0,255);
+	Pixel black = Pixel(0,0,0);
+	Pixel white = Pixel(255,255,255);
+
 	Material light = Material(Pixel(255,255,255));
 	light.setEmissionStrengh(1.);
 
-	Vector<double> v1 = Vector(20.,20.,0.);
-	Vector<double> v2 = Vector(20.,-20.,0.);
-	Vector<double> v3 = Vector(-20.,-20.,0.);
-	Vector<double> v4 = Vector(-20.,20.,0.);
-	Face ground = Face(v1,light);
-	ground.addVectex(v2);
-	ground.addVectex(v3);
-	ground.addVectex(v4);
-	env.addFace(ground);
+	Material mirror = Material(Pixel(255,255,255));
+	mirror.setSpecularSmoothness(1.);
 
-	Vector<double> vec1 = Vector(0.,0.,0.);
-	Vector<double> vec2 = Vector(0.,0.,1.);
-	Vector<double> vec3 = Vector(1.,1.,1.);
-	Vector<double> vec4 = Vector(1.,1.,0.);
-	Face face1 = Face(vec1,Pixel(255,0,0));
-	face1.addVectex(vec2);
-	face1.addVectex(vec3);
-	face1.addVectex(vec4);
-	env.addFace(face1);
+	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.),mirror);
 
-	Vector<double> vec5 = Vector(0.,0.,0.);
-	Vector<double> vec6 = Vector(0.,0.,1.);
-	Vector<double> vec7 = Vector(1.,-1.,1.);
-	Vector<double> vec8 = Vector(1.,-1.,0.);
-	Face face2 = Face(vec5,Pixel(0,255,0));
-	face2.addVectex(vec6);
-	face2.addVectex(vec7);
-	face2.addVectex(vec8);
-	env.addFace(face2);
+	env.addSquare(Vector(0.,0.,0.),Vector(0.,0.,1.),Vector(1.,1.,1.),Vector(1.,1.,0.),yellow);
+	env.addSquare(Vector(0.,0.,0.),Vector(1.,-1.,0.),Vector(1.,-1.,1.),Vector(0.,0.,1.),cyan);
+	env.addSquare(Vector(0.,0.,1.),Vector(1.,-1.,1.),Vector(2.,0.,1.),Vector(1.,1.,1.),magenta);
 
-	Vector<double> vec9 = Vector(0.,0.,1.);
-	Vector<double> vec10 = Vector(1.,-1.,1.);
-	Vector<double> vec11 = Vector(2.,0.,1.);
-	Vector<double> vec12 = Vector(1.,1.,1.);
-	Face face3 = Face(vec9,Pixel(0,0,255));
-	face3.addVectex(vec10);
-	face3.addVectex(vec11);
-	face3.addVectex(vec12);
-	env.addFace(face3);
-
-	Vector<double> vec13 = Vector(0.,0.,0.) + Vector(0.,-1.5,0.);
-	Vector<double> vec14 = Vector(0.,0.,2.) + Vector(0.,-1.5,0.);
-	Vector<double> vec15 = Vector(2.,0.,2.) + Vector(0.,-1.5,0.);
-	Vector<double> vec16 = Vector(2.,0.,0.) + Vector(0.,-1.5,0.);
-	Face face4 = Face(vec13,light);
-	face4.addVectex(vec14);
-	face4.addVectex(vec15);
-	face4.addVectex(vec16);
-	env.addFace(face4);
-
-	Face face5 = Face(face4);
-	face5.move(Vector<double>(0.,3.,0.));
-	env.addFace(face5);
+	env.addSquare(Vector(0.,-2.,0.),Vector(0.,-2.,2.),Vector(2.,-2.,2.),Vector(2.,-2.,0.),light); // left panel 
+	env.addSquare(Vector(0.,2.,0.),Vector(0.,2.,2.),Vector(2.,2.,2.),Vector(2.,2.,0.),light); // right panel
 
 	uint numberImage=2;
 	auto start = std::chrono::steady_clock::now();
@@ -192,13 +159,7 @@ void firstRender() {
 	std::cout << "Elapsed time per image (render + png writing): " << elapsed_seconds.count()/numberImage << "s\n";
 }
 
-int main() { 
-	Pixel red = Pixel(255,0,0);
-	Pixel green = Pixel(0,255,0);
-	Pixel blue = Pixel(0,0,255);
-	Pixel black = Pixel(0,0,0);
-	Pixel white = Pixel(255,255,255);
-
+int main() {
 	//testCam();
 	//testFace();
 	//renderFadeBlackToWhite();

@@ -26,7 +26,7 @@ $ build/main
 
 ![Simple render of cube](/cube.png)
 
-![Raytraced render of cube](/cube3.png)
+![Raytraced render of cube](/cube4.png)
 
 CUDA render almost 40 times faster than classic CPU render
 

@@ -48,7 +48,7 @@ class Face {
         }
 
         __host__ __device__ Vector<double> getNormalVector() const {
-            return (vertices[1]-vertices[0]).crossProduct(vertices[2]-vertices[0]).normalize();
+            return (vertices[1]-vertices[0]).crossProduct(vertices[2]-vertices[2]).normalize();
         }
 
         __host__ __device__ Vector<double> getBarycenter() const {

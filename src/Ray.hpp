@@ -62,6 +62,10 @@ class Ray : public Line {
             return dir*sign(dir*normal);
         }
 
+        __host__ __device__ Vector<double> getSpecularDirection(const Vector<double>& normal) const {
+            return direction - direction*2*(direction*normal);
+        }
+
         __host__ Hit simpleTraceHost(Faces& faces) {
             Hit hit = Hit();
             for (uint i=0;i<faces.size();i++) {
@@ -122,6 +126,28 @@ class Ray : public Line {
             }
             Pixel finalColor = Pixel(incomingLight);
             return finalColor;
+        }
+
+        __device__ Vector<double> rayTrace3(int idx, Ray ray, FaceCuda* faces, uint nbFaces) {
+            Vector<double> incomingLight = Vector<double>(0.,0.,0.);
+            Vector<double> rayColor = Vector<double>(1.,1.,1.);
+            for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
+                Hit hit = ray.simpleTraceDevice(faces, nbFaces);
+                if (hit.getHasHit()) {
+                    Material mat = hit.getMaterial();
+                    Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(),idx);
+                    Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
+                    Vector<double> finalDirection = diffusionDir*(1-mat.getSpecularSmoothness()) + specularDir*mat.getSpecularSmoothness();
+                    ray = Ray(hit.getPoint(),diffusionDir);
+                    Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
+                    incomingLight += emittedLight.productTermByTerm(rayColor);
+                    rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;
+
+                } else {
+                    break;
+                }
+            }
+            return incomingLight;
         }
 
 };

@@ -25,6 +25,10 @@ class Environment {
         Camera* cam;
         Faces faces;
         uint samples = 5;
+
+        uint samplesByThread = 8;
+        uint threadsByRay = 4;
+
         Pixel backgroundColor = Pixel(0,0,0);
         uint mode = RAYTRACING;
 
@@ -35,6 +39,22 @@ class Environment {
 
         void addFace(Face& face) {
             faces.push_back(face);
+        }
+
+        void addSquare(Vector<double> v1, Vector<double> v2, Vector<double> v3, Vector<double> v4, Pixel color) {
+            Face face = Face(v1,color);
+            face.addVectex(v2);
+            face.addVectex(v3);
+            face.addVectex(v4);
+            addFace(face);
+        }
+
+        void addSquare(Vector<double> v1, Vector<double> v2, Vector<double> v3, Vector<double> v4, Material mat) {
+            Face face = Face(v1,mat);
+            face.addVectex(v2);
+            face.addVectex(v3);
+            face.addVectex(v4);
+            addFace(face);
         }
 
         void addObj(const std::string name) {
@@ -112,10 +132,10 @@ class Environment {
             cudaErrorCheck(cudaMalloc(&d_faces,nbFaces*sizeof(FaceCuda)));
             cudaErrorCheck(cudaMemcpy(d_faces, faces_ptr, nbFaces*sizeof(FaceCuda), cudaMemcpyHostToDevice));
 
-            Pixel* colors = new Pixel[W * H];
+            Pixel* colors = new Pixel[threadsByRay * W * H];
             Pixel* d_colors;
-            cudaErrorCheck(cudaMalloc(&d_colors, H*W*sizeof(Pixel)));
-            cudaErrorCheck(cudaMemcpy(d_colors, colors, H*W*sizeof(Pixel), cudaMemcpyHostToDevice));
+            cudaErrorCheck(cudaMalloc(&d_colors, threadsByRay*H*W*sizeof(Pixel)));
+            cudaErrorCheck(cudaMemcpy(d_colors, colors, threadsByRay*H*W*sizeof(Pixel), cudaMemcpyHostToDevice));
 
             Ray* rays = new Ray[W * H];
             Ray* d_rays;
@@ -129,12 +149,15 @@ class Environment {
             cudaErrorCheck(cudaMemcpy(d_rays, rays, H*W*sizeof(Ray), cudaMemcpyHostToDevice));
             delete[] rays;
 
-            int blocksize = 256;
-            int nblocks = H*W / blocksize;
+            int blocksize = 256; // 1024 at most
+            int nblocks = threadsByRay*H*W / blocksize;
 
-            rayTrace3(d_rays,d_faces,d_colors,nbFaces,nblocks,blocksize,W,H);
+            srand(time(NULL));
+            int state  = rand() % 50 + 1;
 
-            cudaErrorCheck(cudaMemcpy(colors, d_colors, H*W*sizeof(Pixel), cudaMemcpyDeviceToHost));
+            rayTrace(d_rays,d_faces,d_colors,nbFaces,nblocks,blocksize,W,H,samplesByThread,threadsByRay,state);
+
+            cudaErrorCheck(cudaMemcpy(colors, d_colors, threadsByRay*H*W*sizeof(Pixel), cudaMemcpyDeviceToHost));
             cudaErrorCheck(cudaFree(d_colors));
             for (uint i=0;i<nbFaces;i++) {
                 cudaErrorCheck(cudaFree(faces_ptr[i].getVertices()));
@@ -146,7 +169,11 @@ class Environment {
 
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w) {
-                    cam->setPixel(h*W+w, colors[h*W+w]);
+                    Vector<double> partialColor;
+                    for(uint i=0;i<threadsByRay;i++)
+                        partialColor+=(colors[W*H*i + h*W + w].toVector());
+                    partialColor/=threadsByRay;
+                    cam->setPixel(h*W+w, Pixel(partialColor));
                 }
             }
             delete[] colors;

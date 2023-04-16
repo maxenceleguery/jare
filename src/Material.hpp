@@ -7,12 +7,12 @@
 class Material {
     private:
         Pixel emissionColor;
-        double diffusion;
-        double reflexion;
+        double diffusion = 0.;
+        double specularSmoothness = 0.;
         double emissionStrengh = 0.;
     public:
-        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), diffusion(0), reflexion(0) {};
-        __host__ __device__ Material(Pixel color0) : emissionColor(color0), diffusion(0), reflexion(0) {};
+        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), diffusion(0), specularSmoothness(0) {};
+        __host__ __device__ Material(Pixel color0) : emissionColor(color0), diffusion(0), specularSmoothness(0) {};
         __host__ __device__ ~Material() {};
 
     __host__ __device__ Pixel getColor() const {
@@ -29,11 +29,11 @@ class Material {
         diffusion=d;
     }
 
-    __host__ __device__ double getReflexion() const {
-        return reflexion;
+    __host__ __device__ double getSpecularSmoothness() const {
+        return specularSmoothness;
     }
-    __host__ __device__ void setReflexion(const double r) {
-        reflexion=r;
+    __host__ __device__ void setSpecularSmoothness(const double ss) {
+        specularSmoothness=ss;
     }
 
     __host__ __device__ double getEmissionStrengh() const {

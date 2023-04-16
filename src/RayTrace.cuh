@@ -7,6 +7,6 @@
 
 void cudaAssert(const cudaError err, const char *file, const int line);
 
-__global__ void rayTraceCuda(Ray* rays, FaceCuda* faces, Pixel* colors, uint nbFaces);
+__global__ void rayTraceCuda(Ray* rays, FaceCuda* faces, Pixel* colors, uint nbFaces, uint W, uint H, uint samplesByThread, uint threadsByRay, int state);
 
-void rayTrace3(Ray* rays, FaceCuda* faces, Pixel* colors, uint nbFaces,uint nblocks,uint blocksize,uint W,uint H);
+void rayTrace(Ray* rays, FaceCuda* faces, Pixel* colors, uint nbFaces,uint nblocks,uint blocksize,uint W,uint H, uint samplesByThread, uint threadsByRay, int state);
