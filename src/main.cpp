@@ -137,7 +137,7 @@ void firstRender() {
 	env.addSquare(Vector(0.,-2.,0.),Vector(0.,-2.,2.),Vector(2.,-2.,2.),Vector(2.,-2.,0.),light); // left panel 
 	env.addSquare(Vector(0.,2.,0.),Vector(0.,2.,2.),Vector(2.,2.,2.),Vector(2.,2.,0.),light); // right panel
 
-	uint numberImage=20;
+	uint numberImage=2;
 	auto start = std::chrono::steady_clock::now();
 
 	for (uint i=0;i<numberImage;i++) {

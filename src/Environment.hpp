@@ -6,6 +6,7 @@
 #include "Line.hpp"
 #include "Ray.hpp"
 #include "RayTrace.cuh"
+#include "Image.hpp"
 
 #include <stdlib.h>
 #include <time.h>
@@ -177,6 +178,18 @@ class Environment {
                 }
             }
             delete[] colors;
+
+            //std::cout << "1" << std::endl;
+            Image img = Image(cam);
+            //std::cout << "2" << std::endl;
+            Image img2 = img.convolve(img.gaussianKernel,3);
+            //std::cout << "3" << std::endl;
+            
+            for(uint h = 0; h < H; ++h) {
+                for(uint w = 0; w < W; ++w) {
+                    cam->setPixel(h*W+w, img2.getPixel(w,h));
+                }
+            }
         }
 
         void addBackground(const Pixel& color) {
