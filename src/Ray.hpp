@@ -63,7 +63,7 @@ class Ray : public Line {
         }
 
         __host__ __device__ Vector<double> getSpecularDirection(const Vector<double>& normal) const {
-            return direction - direction*2*(direction*normal);
+            return direction - normal*2*(direction*normal);
         }
 
         __host__ Hit simpleTraceHost(Faces& faces) {
@@ -137,8 +137,8 @@ class Ray : public Line {
                     Material mat = hit.getMaterial();
                     Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(),idx);
                     Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
-                    Vector<double> finalDirection = diffusionDir*(1-mat.getSpecularSmoothness()) + specularDir*mat.getSpecularSmoothness();
-                    ray = Ray(hit.getPoint(),diffusionDir);
+                    Vector<double> finalDirection = (diffusionDir*(1-mat.getSpecularSmoothness()) + specularDir*mat.getSpecularSmoothness()).normalize();
+                    ray = Ray(hit.getPoint(),finalDirection);
                     Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
                     incomingLight += emittedLight.productTermByTerm(rayColor);
                     rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;
