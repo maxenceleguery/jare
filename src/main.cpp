@@ -31,11 +31,11 @@ void renderFadeBlackToWhite() {
 	for (uint8_t i = 0; i<255; i++) {
 		Pixel color = Pixel(i,i,i);
 		env.addBackground(color);
-		std::string name = "./render/image";
+		std::string path = "./render/image";
 		std::string format = ".png";
-		name.append(std::to_string(i));
-		name.append(format);
-		cam.renderImage(name.c_str());
+		path.append(std::to_string(i));
+		path.append(format);
+		cam.renderImage(path.c_str());
 	}
 }
 
@@ -109,8 +109,8 @@ void testVector() {
 
 void firstRender() {
 	Vector<double> origine = Vector<double>(-3.,0.,1.5);
-	Vector<double> orientation = Vector<double>(1,0,-0.2);
-	Camera cam = Camera(origine,orientation,1280,720);
+	Vector<double> front = Vector<double>(1,0,-0.2);
+	Camera cam = Camera(origine,front,1280,720);
 	Environment env = Environment(&cam);
 
 	Pixel red = Pixel(255,0,0);
@@ -137,26 +137,28 @@ void firstRender() {
 	env.addSquare(Vector(0.,-2.,0.),Vector(0.,-2.,2.),Vector(2.,-2.,2.),Vector(2.,-2.,0.),light); // left panel 
 	env.addSquare(Vector(0.,2.,0.),Vector(0.,2.,2.),Vector(2.,2.,2.),Vector(2.,2.,0.),light); // right panel
 
-	uint numberImage=2;
+	uint numberImage=10;
 	auto start = std::chrono::steady_clock::now();
 
 	for (uint i=0;i<numberImage;i++) {
 		if (i%1==0)
 			std::cout << "Rendering image N° " << i+1 << "/" << numberImage << std::endl;
 		cam.setPosition(cam.getPosition()-Vector<double>(i/100.0,0.,0.));
+		cam.rotate(0.01,ROT_UP);
 		env.addBackground(Pixel(0,0,0));
 		//env.render();
 		env.renderCuda();
-		std::string name = "./render2/image";
+		std::string path = "./render2/image";
 		std::string format = ".png";
-		name.append(std::to_string(i));
-		name.append(format);
-		cam.renderImage(name.c_str());
+		path.append(std::to_string(i));
+		path.append(format);
+		cam.renderImage(path.c_str());
 	}
 
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "Elapsed time per image (render + png writing): " << elapsed_seconds.count()/numberImage << "s\n";
+	std::cout << "Total time: " << elapsed_seconds.count() << "s\n";
 }
 
 int main() {

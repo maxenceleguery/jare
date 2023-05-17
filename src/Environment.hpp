@@ -78,7 +78,7 @@ class Environment {
                     Pixel color;
                     Vector<double> colorVec;
                     if (mode==SIMPLE_RENDER) {
-                        Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                        Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                         Ray ray = Ray(cam->getPosition(),direction);
 
                         color = ray.rayTrace1(faces, backgroundColor);
@@ -92,7 +92,7 @@ class Environment {
                         do {
                             double dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
 
                                 vectTmp = (ray.rayTrace2(faces, h*w)).toVector();
@@ -142,7 +142,7 @@ class Environment {
             Ray* d_rays;
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w) {
-                    Vector<double> direction = (cam->getOrientation()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                    Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                     rays[h*W+w] = Ray(cam->getPosition(),direction);
                 }
             }
@@ -179,15 +179,12 @@ class Environment {
             }
             delete[] colors;
 
-            //std::cout << "1" << std::endl;
             Image img = Image(cam);
-            //std::cout << "2" << std::endl;
-            Image img2 = img.convolve(img.gaussianKernel,3);
-            //std::cout << "3" << std::endl;
+            //Image img2 = img.convolve(img.gaussianKernel,3);
             
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w) {
-                    cam->setPixel(h*W+w, img2.getPixel(w,h));
+                    cam->setPixel(h*W+w, img.getPixel(w,h));
                 }
             }
         }

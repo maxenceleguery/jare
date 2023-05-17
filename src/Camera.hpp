@@ -1,15 +1,24 @@
 #pragma once
 #include "Vector.hpp"
 #include "Pixel.hpp"
+#include "Matrix.hpp"
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <png.h>
 
+#define ROT_RIGHT 2000
+#define ROT_FRONT 2001
+#define ROT_UP 2002
+
 class Camera {
     private:
         Vector<double> position;
-        Vector<double> orientation;
+
+        Vector<double> vectRight;
+        Vector<double> vectFront;
+        Vector<double> vectUp;
+
         uint width;
         uint height;
         double capteurWidth;
@@ -19,11 +28,11 @@ class Camera {
 
     public:
         Camera(){};
-        Camera(Vector<double> pos, uint width0, uint height0) : position(pos), orientation(Vector<double>()), width(width0), height(height0), pixels(width0*height0) {
+        Camera(Vector<double> pos, uint width0, uint height0) : position(pos), vectFront(Vector<double>(0,1,0)), vectUp(Vector<double>(0,0,1)), vectRight(Vector<double>(1,0,0).crossProduct(Vector<double>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
-        Camera(Vector<double> pos, Vector<double> ori, uint width0, uint height0) : position(pos), orientation(ori), width(width0), height(height0), pixels(width0*height0) {
+        Camera(Vector<double> pos, Vector<double> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<double>(0,0,1)), vectRight(front.crossProduct(Vector<double>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
@@ -33,14 +42,14 @@ class Camera {
             return width;
         }
 
-        uint getHeight() const {
+        inline uint getHeight() const {
             return height;
         }
 
         Vector<double> getPixelCoordOnCapt(double w, double h) const {
             double W = (1.*w - width/2.)*(1.*capteurWidth/width);
             double H = (-1.*h + height/2.)*(1.*capteurHeight/height);
-            return Vector<double>(0.,0.,1.)*H + (Vector<double>(0.,0.,1.).crossProduct(orientation).normalize())*W;
+            return vectUp*H + vectRight*W;
         }
 
         inline Pixel getPixel(uint index) const {
@@ -59,16 +68,46 @@ class Camera {
             position=pos;
         }
 
-        inline Vector<double> getOrientation() const {
-            return orientation;
+        inline Vector<double> getVectFront() const {
+            return vectFront;
         }
 
-        void setOrientation(Vector<double>& ori) {
-            orientation=ori;
+        void setvectFront(Vector<double>& ori) {
+            vectFront=ori;
         }
 
         inline double getFov() const {
             return fov;
+        }
+
+        void rotate(double angle, uint axis) {
+            Vector<double> direction;
+            switch (axis) {
+            case ROT_FRONT:
+                direction=vectFront.normalize();
+                break;
+            case ROT_RIGHT:
+                direction=vectRight.normalize();
+                break;
+            case ROT_UP:
+                direction=vectUp.normalize();
+                break;
+            
+            default:
+                std::cout << "Wrong axis provided" << std::endl;
+                return;
+            }
+            double ux = direction.getX();
+            double uy = direction.getY();
+            double uz = direction.getZ();
+            Matrix<double> P = Matrix<double>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
+            Matrix<double> I = Matrix<double>(1.,MATRIX_EYE);
+            Matrix<double> Q = Matrix<double>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
+
+            Matrix<double> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
+            vectFront=(R*vectFront).normalize();
+            vectRight=(R*vectRight).normalize();
+            vectUp=(R*vectUp).normalize();
         }
 
         void write_png_file(const char* filename, uint8_t* image_data) {
