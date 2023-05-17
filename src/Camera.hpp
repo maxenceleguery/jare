@@ -15,9 +15,9 @@ class Camera {
     private:
         Vector<double> position;
 
-        Vector<double> vectRight;
-        Vector<double> vectFront;
-        Vector<double> vectUp;
+        Vector<double> vectRight = Vector<double>(1,0,0);
+        Vector<double> vectFront = Vector<double>(0,1,0);
+        Vector<double> vectUp = Vector<double>(0,0,1);
 
         uint width;
         uint height;

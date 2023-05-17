@@ -7,6 +7,7 @@
 #include "Ray.hpp"
 #include "RayTrace.cuh"
 #include "Image.hpp"
+#include "Obj.hpp"
 
 #include <stdlib.h>
 #include <time.h>
@@ -27,8 +28,8 @@ class Environment {
         Faces faces;
         uint samples = 5;
 
-        uint samplesByThread = 8;
-        uint threadsByRay = 4;
+        uint samplesByThread = 8; //8
+        uint threadsByRay = 4; //4
 
         Pixel backgroundColor = Pixel(0,0,0);
         uint mode = RAYTRACING;
@@ -58,14 +59,32 @@ class Environment {
             addFace(face);
         }
 
-        void addObj(const std::string name) {
-            std::cout << "Loading " << name.c_str() << std::endl;
-            std::string path = std::string("./models/");
-            std::ifstream monFlux((path+name).c_str());
-            std::string ligne;
-            getline(monFlux, ligne);
-            std::cout << ligne << std::endl;
-            
+        void addObj(const std::string name, Vector<double> offset, double scale, Material mat) {
+            Obj obj = Obj(name);
+            //obj.print();
+
+            std::vector<Vector<double>> vertices = obj.getVertices();
+            std::vector<std::vector<Vector<int>>> indexes = obj.getIndexes();
+
+            double angle = 3.14159/2.0;
+            double ux = 1;
+            double uy = 0;
+            double uz = 0;
+            Matrix<double> P = Matrix<double>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
+            Matrix<double> I = Matrix<double>(1.,MATRIX_EYE);
+            Matrix<double> Q = Matrix<double>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
+
+            Matrix<double> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
+
+            for (uint i=0;i<indexes.size();i++) {
+                std::vector<Vector<int>> fi = indexes[i];
+                Vector<double> vec1 = R*vertices[fi[0].getX()]*scale + offset;
+                Face face(vec1,mat);
+                for (uint j=1;j<fi.size();j++) {
+                    face.addVectex( R*vertices[fi[j].getX()]*scale + offset );
+                }
+                addFace(face);
+            } 
         }        
 
         void render() {

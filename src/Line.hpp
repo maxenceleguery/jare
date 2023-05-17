@@ -45,5 +45,3 @@ class Line {
             return (M+u*k1)==(N+v*k2) && 1E-7<k1 && k1<1-1E-7 && 1E-7<k2 && k2<1-1E-7;
         }
 };
-
-

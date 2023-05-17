@@ -150,9 +150,8 @@ class Face {
             Vector<double> startingPoint = line.getPoint();
             Vector<double> direction = line.getDirection();
             Vector<double> normalVector = getNormalVector();
-            double d = -normalVector*(vertices[0]);
             if (direction*normalVector != 0) {
-                double k = (-d - normalVector*startingPoint)/(direction*normalVector);
+                double k = (normalVector*(vertices[0]) - normalVector*startingPoint)/(direction*normalVector);
                 Vector<double> intersectionPoint = startingPoint + direction*k;
                 if (isInPolygone(intersectionPoint) && k>1E-7) {
                     for (uint i=0;i<vertices.size();i++) {

@@ -137,14 +137,13 @@ void firstRender() {
 	env.addSquare(Vector(0.,-2.,0.),Vector(0.,-2.,2.),Vector(2.,-2.,2.),Vector(2.,-2.,0.),light); // left panel 
 	env.addSquare(Vector(0.,2.,0.),Vector(0.,2.,2.),Vector(2.,2.,2.),Vector(2.,2.,0.),light); // right panel
 
-	uint numberImage=10;
+	uint numberImage=2;
 	auto start = std::chrono::steady_clock::now();
 
 	for (uint i=0;i<numberImage;i++) {
 		if (i%1==0)
 			std::cout << "Rendering image N° " << i+1 << "/" << numberImage << std::endl;
 		cam.setPosition(cam.getPosition()-Vector<double>(i/100.0,0.,0.));
-		cam.rotate(0.01,ROT_UP);
 		env.addBackground(Pixel(0,0,0));
 		//env.render();
 		env.renderCuda();
@@ -153,12 +152,55 @@ void firstRender() {
 		path.append(std::to_string(i));
 		path.append(format);
 		cam.renderImage(path.c_str());
+
+		cam.rotate(0.01,ROT_FRONT);
 	}
 
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "Elapsed time per image (render + png writing): " << elapsed_seconds.count()/numberImage << "s\n";
 	std::cout << "Total time: " << elapsed_seconds.count() << "s\n";
+}
+
+void objRender() {
+	Vector<double> origine = Vector<double>(-3.,0.,1.5);
+	Vector<double> front = Vector<double>(1,0,-0.2);
+	Camera cam = Camera(origine,front,1280,720);
+	Environment env = Environment(&cam);
+
+	cam.setPosition(cam.getPosition()-Vector<double>(5.0,0.,-1.5));
+
+	Pixel red = Pixel(255,0,0);
+	Pixel green = Pixel(0,255,0);
+	Pixel blue = Pixel(0,0,255);
+	Pixel yellow = Pixel(255,255,0);
+	Pixel cyan = Pixel(0,255,255);
+	Pixel magenta = Pixel(255,0,255);
+	Pixel black = Pixel(0,0,0);
+	Pixel white = Pixel(255,255,255);
+
+	Material light = Material(Pixel(255,255,255));
+	light.setEmissionStrengh(1.);
+
+	Material mirror = Material(Pixel(255,255,255));
+	mirror.setSpecularSmoothness(1.);
+
+	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.),white);
+	light.setColor(red);
+	env.addSquare(Vector(0.,-2.,0.)*2,Vector(0.,-2.,2.)*2,Vector(2.,-2.,2.)*2,Vector(2.,-2.,0.)*2,light); // left panel 
+	light.setColor(green);
+	env.addSquare(Vector(0.,2.,0.)*2,Vector(0.,2.,2.)*2,Vector(2.,2.,2.)*2,Vector(2.,2.,0.)*2,light); // right panel
+	light.setColor(white);
+
+	env.addObj("knight.obj",Vector<double>(0,0,0),0.5,Material(white));
+
+	env.addBackground(Pixel(0,0,0));
+	env.renderCuda();
+	std::string path = "./render3/image";
+	std::string format = ".png";
+	path.append(std::to_string(0));
+	path.append(format);
+	cam.renderImage(path.c_str());
 }
 
 int main() {
@@ -169,7 +211,9 @@ int main() {
 	//testLine();
 	//testVector();
 	
-	firstRender();
+	//firstRender();
+
+	objRender();
 
 	return EXIT_SUCCESS; 
 }
