@@ -66,10 +66,10 @@ class FaceCuda {
                 return false;
             } else {
                 Vector<double> normalVector = getNormalVector();
-                if (normalVector == Vector(0,0,0))
+                if (normalVector == Vector<double>())
                     return false;
                 for (uint i=0; i<nbVertices;i++) {
-                    if (std::abs(normalVector*(vertices[i]-vertices[0])) > 1E-5)
+                    if (std::abs(normalVector*(vertices[i]-vertices[0]).normalize()) > 1E-3)
                         return false;
                 }
                 return true;
@@ -78,7 +78,7 @@ class FaceCuda {
 
         __device__ bool isOnPlane(const Vector<double>& vec) const {
             Vector<double> normalVector = getNormalVector();
-            return !(std::abs( (vec-vertices[0])*normalVector ) > 1E-5);
+            return std::abs( (vec-vertices[0]).normalize()*normalVector ) < 1E-3;
         }
 
         __device__ bool isInPolygoneOld(const Vector<double>& vec) {
@@ -114,21 +114,16 @@ class FaceCuda {
             return false;
         }
 
-        // Only works if faceCuda is convex :(
         __device__ bool isInPolygone(const Vector<double>& vec) {
             Vector<double> center = getBarycenter();
             if (isOnPlane(vec) && isOnPlane(center) ) {
                 Line line0 = Line(center,vec-center);
                 uint counter = 0;
-                for (uint i=0;i<nbVertices-1;i++) {
-                    Line line = Line(vertices[i],vertices[i+1]-vertices[i]);
+                for (uint i=0;i<nbVertices;i++) {
+                    Line line = Line(vertices[i],vertices[(i+1)%nbVertices]-vertices[i]);
                     if (line0.IsIntersected(line))
                         counter++;
                 }
-                Line line = Line(vertices[nbVertices-1],vertices[0]-vertices[nbVertices-1]);
-                if (line0.IsIntersected(line))
-                    counter++;
-                //std::cout << counter << std::endl;
                 return (counter%2 == 0);
             }
             return false;
@@ -146,15 +141,14 @@ class FaceCuda {
             return planeEq;
         }*/
 
-        __device__ Vector<double> getIntersection(const Line line) {
+        __device__ Vector<double> getIntersection(const Line& line) {
             Vector<double> startingPoint = line.getPoint();
             Vector<double> direction = line.getDirection();
             Vector<double> normalVector = getNormalVector();
-            double d = -normalVector*(vertices[0]);
-            if (direction*normalVector != 0) {
-                double k = (-d - normalVector*startingPoint)/(direction*normalVector);
+            if (std::abs(direction*normalVector) > 1E-3) {
+                double k = (normalVector*(vertices[0]) - normalVector*startingPoint)/(direction*normalVector);
                 Vector<double> intersectionPoint = startingPoint + direction*k;
-                if (isInPolygone(intersectionPoint) && k>1E-7) {
+                if (isInPolygone(intersectionPoint) && k>1E-3) {
                     for (uint i=0;i<nbVertices;i++) {
                         if (intersectionPoint==vertices[i])
                             return Vector<double>();

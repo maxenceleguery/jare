@@ -28,8 +28,8 @@ class Environment {
         Faces faces;
         uint samples = 5;
 
-        uint samplesByThread = 8; //8
-        uint threadsByRay = 4; //4
+        uint samplesByThread = 2; //8
+        uint threadsByRay = 2; //4
 
         Pixel backgroundColor = Pixel(0,0,0);
         uint mode = RAYTRACING;
@@ -60,6 +60,7 @@ class Environment {
         }
 
         void addObj(const std::string name, Vector<double> offset, double scale, Material mat) {
+            std::cout << "Loading " << name.c_str() << std::endl;
             Obj obj = Obj(name);
             //obj.print();
 
@@ -76,15 +77,36 @@ class Environment {
 
             Matrix<double> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
 
+            /*
+            The OBJ format can provide multiple vertices for one face. We have to convert it in triangles as follow.
+            */
             for (uint i=0;i<indexes.size();i++) {
                 std::vector<Vector<int>> fi = indexes[i];
-                Vector<double> vec1 = R*vertices[fi[0].getX()]*scale + offset;
-                Face face(vec1,mat);
-                for (uint j=1;j<fi.size();j++) {
-                    face.addVectex( R*vertices[fi[j].getX()]*scale + offset );
+
+                for (uint v=2;v<fi.size();v++) {
+                    Face face;
+                    if (v==2) {
+                        Vector<double> vec1 = R*vertices[fi[0].getX()]*scale + offset;
+                        face = Face(vec1,mat);
+                        face.addVectex( R*vertices[fi[1].getX()]*scale + offset );
+                        face.addVectex( R*vertices[fi[2].getX()]*scale + offset );
+                    } else {
+                        Vector<double> vec1 = R*vertices[fi[v-3].getX()]*scale + offset;
+                        face = Face(vec1,mat);
+                        face.addVectex( R*vertices[fi[v-1].getX()]*scale + offset );
+                        face.addVectex( R*vertices[fi[v].getX()]*scale + offset );
+                        
+                    }
+                    if (face.isPlaneValid()) {
+                        addFace(face);
+                        obj.nbFaces += 1;
+                    } else {
+                        //std::cout << "Face not valid" << std::endl;
+                        obj.failedFaces += 1;
+                    }
                 }
-                addFace(face);
-            } 
+            }
+            std::cout << name.c_str() << " loaded with " << obj.nbFaces << " faces and " << obj.failedFaces << " wrong ones." << std::endl;
         }        
 
         void render() {
@@ -193,7 +215,7 @@ class Environment {
                     for(uint i=0;i<threadsByRay;i++)
                         partialColor+=(colors[W*H*i + h*W + w].toVector());
                     partialColor/=threadsByRay;
-                    cam->setPixel(h*W+w, Pixel(partialColor));
+                    cam->setPixel(h*W+w, Pixel(partialColor.pow(1/cam->getGamma())));
                 }
             }
             delete[] colors;

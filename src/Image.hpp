@@ -71,7 +71,7 @@ class Image {
                     for (int x=-offset;x<offset+1;x++) {
                         for (int y=-offset;y<offset+1;y++) {
                             //std::cout << w << " " << h << " " << x << " " << y << std::endl;
-                            if (w+x >= 0 && w+x < width && h+y >= 0 && h+y < height)
+                            if (w+x < width && h+y < height)
                                 center+=pixels[w+x][h+y].toVector()*kernel[x+offset][y+offset]/16;
                         }
                     }

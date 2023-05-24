@@ -88,7 +88,7 @@ class Ray : public Line {
             for (uint i=0;i<nbFaces;i++) {
                 Vector<double> intersectionPoint = (faces[i]).getIntersection((Line)(*this));
                 double distance = std::sqrt((intersectionPoint-point).normSquared());
-                if (intersectionPoint != Vector(0.,0.,0.) && distance<hit.getDistance()) {
+                if (intersectionPoint != Vector<double>() && distance<hit.getDistance()) {
                     hit.setDistance(distance);
                     hit.setDistanceTraveled(distance+hit.getDistanceTraveled());
                     hit.setHasHit(true);

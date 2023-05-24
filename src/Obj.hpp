@@ -31,7 +31,6 @@ class Obj {
 
     public:
         Obj(const std::string name) {
-            std::cout << "Loading " << name.c_str() << std::endl;
             std::string path = std::string("./models/");
             std::ifstream monFlux((path+name).c_str());
             std::string ligne;
@@ -71,6 +70,9 @@ class Obj {
         };
 
         ~Obj() {};
+
+        uint nbFaces = 0;
+        uint failedFaces = 0;
 
         void addVertices(Vector<double> vertex) {
             v.push_back(vertex);

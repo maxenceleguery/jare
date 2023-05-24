@@ -15,15 +15,16 @@ class Camera {
     private:
         Vector<double> position;
 
-        Vector<double> vectRight = Vector<double>(1,0,0);
-        Vector<double> vectFront = Vector<double>(0,1,0);
-        Vector<double> vectUp = Vector<double>(0,0,1);
+        Vector<double> vectRight;
+        Vector<double> vectFront;
+        Vector<double> vectUp;
 
         uint width;
         uint height;
         double capteurWidth;
         double capteurHeight;
         double fov = 0.01;
+        double gamma = 2.0;
         std::vector<Pixel> pixels;
 
     public:
@@ -44,6 +45,14 @@ class Camera {
 
         inline uint getHeight() const {
             return height;
+        }
+
+        double getGamma() const {
+            return gamma;
+        }
+
+        void setGamma(double g) {
+            gamma = g;
         }
 
         Vector<double> getPixelCoordOnCapt(double w, double h) const {

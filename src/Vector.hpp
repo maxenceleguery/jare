@@ -154,6 +154,13 @@ class Vector {
             return x*vec.x + y*vec.y + z*vec.z;
         }
 
+        __host__ __device__ Vector<T>& pow(const T nb) {
+            x = std::pow(x,nb);
+            y = std::pow(y,nb);
+            z = std::pow(z,nb);
+            return *this;
+        }
+
         template <typename U>
         __host__ __device__ bool operator == (const Vector<U>& vec) const {
             if (std::is_same<T,U>::value) {

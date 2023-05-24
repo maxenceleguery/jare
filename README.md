@@ -30,4 +30,8 @@ $ build/main
 
 CUDA render almost 40 times faster than classic CPU render
 
+![Raytraced chess knight](/knight2.png)
+
+Took 2924.65s to render (64 samples per ray and 4 threads per ray)
+
 Maxence Leguéry

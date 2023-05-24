@@ -48,7 +48,7 @@ class Face {
         }
 
         __host__ __device__ Vector<double> getNormalVector() const {
-            return (vertices[1]-vertices[0]).crossProduct(vertices[2]-vertices[2]).normalize();
+            return (vertices[1]-vertices[0]).crossProduct(vertices[2]-vertices[0]).normalize();
         }
 
         __host__ __device__ Vector<double> getBarycenter() const {
@@ -60,16 +60,18 @@ class Face {
             return center;
         }
 
-        __host__ __device__ bool isPlaneValid() const {
+        __host__ bool isPlaneValid() const {
             if (vertices.size() < 3) {
-                //std::cout << "Not enough vertices to define a plan" << std::endl;
+                std::cout << "Not enough vertices to define a plan" << std::endl;
                 return false;
+            } else if (vertices.size() == 3) {
+                return true;
             } else {
                 Vector<double> normalVector = getNormalVector();
-                if (normalVector == Vector(0,0,0))
+                if (normalVector == Vector<double>())
                     return false;
                 for (uint i=0; i<vertices.size();i++) {
-                    if (std::abs(normalVector*(vertices[i]-vertices[0])) > 1E-5)
+                    if (std::abs(normalVector*(vertices[i]-vertices[0]).normalize()) > 1E-3)
                         return false;
                 }
                 return true;
@@ -114,21 +116,16 @@ class Face {
             return false;
         }
 
-        // Only works if face is convex :(
         __host__ __device__ bool isInPolygone(const Vector<double>& vec) {
             Vector<double> center = getBarycenter();
             if (isOnPlane(vec) && isOnPlane(center) ) {
                 Line line0 = Line(center,vec-center);
                 uint counter = 0;
-                for (uint i=0;i<vertices.size()-1;i++) {
-                    Line line = Line(vertices[i],vertices[i+1]-vertices[i]);
+                for (uint i=0;i<vertices.size();i++) {
+                    Line line = Line(vertices[i],vertices[(i+1)%vertices.size()]-vertices[i]);
                     if (line0.IsIntersected(line))
                         counter++;
                 }
-                Line line = Line(vertices[vertices.size()-1],vertices[0]-vertices[vertices.size()-1]);
-                if (line0.IsIntersected(line))
-                    counter++;
-                //std::cout << counter << std::endl;
                 return (counter%2 == 0);
             }
             return false;
@@ -150,7 +147,7 @@ class Face {
             Vector<double> startingPoint = line.getPoint();
             Vector<double> direction = line.getDirection();
             Vector<double> normalVector = getNormalVector();
-            if (direction*normalVector != 0) {
+            if (std::abs(direction*normalVector) > 1E-5) {
                 double k = (normalVector*(vertices[0]) - normalVector*startingPoint)/(direction*normalVector);
                 Vector<double> intersectionPoint = startingPoint + direction*k;
                 if (isInPolygone(intersectionPoint) && k>1E-7) {
