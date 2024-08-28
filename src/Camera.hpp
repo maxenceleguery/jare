@@ -77,11 +77,15 @@ class Camera {
             position=pos;
         }
 
+        void move(const Vector<double>& offset) {
+            position += offset;
+        }
+
         inline Vector<double> getVectFront() const {
             return vectFront;
         }
 
-        void setvectFront(Vector<double>& ori) {
+        void setVectFront(Vector<double>& ori) {
             vectFront=ori;
         }
 

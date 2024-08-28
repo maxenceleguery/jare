@@ -34,4 +34,8 @@ CUDA render almost 40 times faster than classic CPU render
 
 Took 2924.65s to render (64 samples per ray and 4 threads per ray)
 
+![Raytraced chess knight](/knight3.png)
+
+Took 614.99s to render (128 samples per ray and 1 threads per ray)
+
 Maxence Leguéry

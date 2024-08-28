@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PIXEL_HPP
+#define PIXEL_HPP
+
 #include "Vector.hpp"
 #include <cstdint>
 #include <iostream>
@@ -78,3 +80,16 @@ class Pixel {
             return Vector<double>(r,g,b)/255.0;
         }
 };
+
+namespace Colors {
+    const Pixel RED = Pixel(255,0,0);
+    const Pixel GREEN = Pixel(0,255,0);
+    const Pixel BLUE = Pixel(0,0,255);
+    const Pixel YELLOW = Pixel(255,255,0);
+    const Pixel CYAN = Pixel(0,255,255);
+    const Pixel MAGENTA = Pixel(255,0,255);
+    const Pixel BLACK = Pixel(0,0,0);
+    const Pixel WHITE = Pixel(255,255,255);
+}
+
+#endif

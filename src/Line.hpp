@@ -9,13 +9,14 @@ class Line {
     protected:
         Vector<double> point;
         Vector<double> direction;
+        Vector<double> invDir;
 
         __host__ __device__ bool isInInterval(const double value, const double x, const double y, const double eps=0) {
             return  x+eps < value && value < y-eps;
         }
     public:
         __host__ __device__ Line(){};
-        __host__ __device__ Line(Vector<double> point0, Vector<double> direction0) : point(point0), direction(direction0) {};
+        __host__ __device__ Line(Vector<double> point0, Vector<double> direction0) : point(point0), direction(direction0), invDir(direction0.invCoords()) {};
         __host__ __device__ ~Line(){};
 
         __host__ __device__ Vector<double> getPoint() const {
@@ -32,6 +33,7 @@ class Line {
 
         __host__ __device__ void setDirection(const Vector<double>& d) {
             direction=d;
+            invDir=d.invCoords();
         } 
 
         __host__ __device__ bool IsIntersected(Line& line) {

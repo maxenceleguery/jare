@@ -3,6 +3,8 @@
 #include <cstring>
 #include <cmath>
 
+#include "utils/MinMax.hpp"
+
 #include <cuda_runtime.h>
 
 template<typename T>
@@ -48,6 +50,19 @@ class Vector {
             return 3;
         }
 
+        __host__ __device__ T operator[](const uint i) {
+            switch (i) {
+                case 0:
+                    return x;
+                case 1:
+                    return y;
+                case 2:
+                    return z;
+                default:
+                    return -1;
+            }
+        }
+
         __host__ void printCoord() const {
             std::cout << "("
                         << x
@@ -59,8 +74,16 @@ class Vector {
                         << std::endl;
         }
 
+        __host__ __device__ Vector<T> invCoords() const {
+            return Vector<T>(1./x, 1./y, 1./z);
+        }
+
         __host__ __device__ T normSquared() const {
             return x*x + y*y + z*z;
+        }
+
+        __host__ __device__ T norm() const {
+            return std::sqrt(normSquared());
         }
 
         __host__ __device__ Vector<T> normalize() {
@@ -81,19 +104,29 @@ class Vector {
         }
 
         template<typename U>
-        __host__ __device__ Vector& operator = (const Vector<U>& vec) {
-            this->x = static_cast<T>(vec.x);
-            this->y = static_cast<T>(vec.y);
-            this->z = static_cast<T> (vec.z);
+        __host__ __device__ Vector& operator= (const Vector<U>& vec) {
+            if (this != &vec) {
+                x = static_cast<T>(vec.x);
+                y = static_cast<T>(vec.y);
+                z = static_cast<T> (vec.z);
+            }
             return *this;
         }
 
-        __host__ __device__ Vector<T> operator + (const Vector<T>& vec) const {
+        __host__ __device__ Vector<T> operator+ (const Vector<T>& vec) const {
             return Vector<T>(x+vec.x,y+vec.y,z+vec.z);
+        }
+
+        __host__ __device__ Vector<T> operator+ (const T number) const {
+            return Vector<T>(x+number,y+number,z+number);
         }
 
         __host__ __device__ Vector<T> operator- (const Vector<T>& vec) const {
             return Vector<T>(x-vec.x,y-vec.y,z-vec.z);
+        }
+
+        __host__ __device__ Vector<T> operator- (const T number) const {
+            return Vector<T>(x-number,y-number,z-number);
         }
 
         __host__ __device__ Vector<T> operator- () const {
@@ -109,44 +142,44 @@ class Vector {
         }
 
         __host__ __device__ Vector<T>& operator+= (const T nb) {
-            this->x += nb;
-            this->y += nb;
-            this->z += nb;
+            x += nb;
+            y += nb;
+            z += nb;
             return *this;
         }
 
         __host__ __device__ Vector<T>& operator+= (const Vector<T>& vec) {
-            this->x += vec.x;
-            this->y += vec.y;
-            this->z += vec.z;
+            x += vec.x;
+            y += vec.y;
+            z += vec.z;
             return *this;
         }
 
         __host__ __device__ Vector<T>& operator-= (const T nb) {
-            this->x -= nb;
-            this->y -= nb;
-            this->z -= nb;
+            x -= nb;
+            y -= nb;
+            z -= nb;
             return *this;
         }
 
         __host__ __device__ Vector<T>& operator-= (const Vector<T>& vec) {
-            this->x -= vec.x;
-            this->y -= vec.y;
-            this->z -= vec.z;
+            x -= vec.x;
+            y -= vec.y;
+            z -= vec.z;
             return *this;
         }
 
         __host__ __device__ Vector<T>& operator*= (const T nb) {
-            this->x *= nb;
-            this->y *= nb;
-            this->z *= nb;
+            x *= nb;
+            y *= nb;
+            z *= nb;
             return *this;
         }
 
         __host__ __device__ Vector<T>& operator/= (const T nb) {
-            this->x /= nb;
-            this->y /= nb;
-            this->z /= nb;
+            x /= nb;
+            y /= nb;
+            z /= nb;
             return *this;
         }
 
@@ -177,14 +210,14 @@ class Vector {
         template <typename U>
         __host__ __device__ Vector<U> productTermByTerm(const Vector<U>& vec2) const {
             if (std::is_same<T,U>::value) {
-                return Vector(x*vec2.getX(), y*vec2.getY(), z*vec2.getZ());
+                return Vector(x*vec2.x, y*vec2.y, z*vec2.z);
             }
         }
 
         template <typename U>
         __host__ __device__ Vector<U> crossProduct(const Vector<U>& vec2) const {
             if (std::is_same<T,U>::value) {
-                return Vector(y*vec2.getZ() - z*vec2.getY(),z*vec2.getX() - x*vec2.getZ(),x*vec2.getY() - y*vec2.getX());
+                return Vector(y*vec2.z - z*vec2.y,z*vec2.x - x*vec2.z,x*vec2.y - y*vec2.x);
             }
         }
 
@@ -196,5 +229,13 @@ class Vector {
                 }
                 return std::acos( normalize(*this)*normalize(vec2) );
             }
+        }
+
+        __host__ __device__ Vector<T> max(const Vector<T>& vec2) const {
+            return Vector<T>(Utils::max(x, vec2.x), Utils::max(y, vec2.y), Utils::max(z, vec2.z));
+        }
+
+        __host__ __device__ Vector<T> min(const Vector<T>& vec2) const {
+            return Vector<T>(Utils::min(x, vec2.x), Utils::min(y, vec2.y), Utils::min(z, vec2.z));
         }
 };

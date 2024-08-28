@@ -10,13 +10,26 @@ class Hit {
         Material mat = Material();
         Vector<double> point = Vector<double>();
         Vector<double> normal = Vector<double>();
-        double distance = 1E10;
+        double distance = INFINITY;
         double distanceTraveled = 0.;
+        double firstDistance = -1.;
         bool hasHit = false;
         
     public:
         __host__ __device__ Hit() {};
         __host__ __device__ ~Hit() {};
+
+        __host__ __device__ void update(const Hit& hit) {
+            if (hit.getHasHit() && hit.getDistance() < distance) {
+                if (firstDistance < 0)
+                    firstDistance = hit.distance;
+                setDistance(hit.distance);
+                setHasHit(true);
+                setMaterial(hit.mat);
+                setNormal(hit.normal);
+                setPoint(hit.point);
+            }
+        }
         
         // getters
         __host__ __device__ Material getMaterial() const {
@@ -35,6 +48,10 @@ class Hit {
             return distance;
         }
         
+        __host__ __device__ double getFirstDistance() const {
+            return firstDistance;
+        }
+
         __host__ __device__ double getDistanceTraveled() const {
             return distanceTraveled;
         }
@@ -58,10 +75,11 @@ class Hit {
         
         __host__ __device__ void setDistance(const double& d) {
             distance = d;
+            distanceTraveled += d;
         }
-        
-        __host__ __device__ void setDistanceTraveled(const double& dt) {
-            distanceTraveled = dt;
+
+        __host__ __device__ void setFirstDistance(const double& d) {
+            firstDistance = d;
         }
         
         __host__ __device__ void setHasHit(const bool& h) {

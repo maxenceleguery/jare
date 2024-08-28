@@ -12,7 +12,7 @@ class Obj {
         std::vector<Vector<double>> v;
         std::vector<Vector<double>> vt;
         std::vector<Vector<double>> vn;
-        std::vector<std::vector<Vector<int>>> facesVecticesIndexes;
+        std::vector<std::vector<Vector<int>>> trianglesVecticesIndexes;
 
         std::vector<std::string> split(std::string ligne, char delim) {
             std::vector<std::string> splitted;
@@ -61,18 +61,18 @@ class Obj {
                     splitted = split(rtrim(ligne), ' ');
                     std::vector<Vector<int>> vecticesIndexes;
                     for (uint i=1;i<splitted.size();i++) {
-                        std::vector<std::string> splittedFaces = split(splitted[i], '/');
-                        vecticesIndexes.push_back(Vector<int>(atoi(splittedFaces[0].c_str())-1,atoi(splittedFaces[1].c_str())-1,atoi(splittedFaces[2].c_str())-1));
+                        std::vector<std::string> splittedTriangles = split(splitted[i], '/');
+                        vecticesIndexes.push_back(Vector<int>(atoi(splittedTriangles[0].c_str())-1,atoi(splittedTriangles[1].c_str())-1,atoi(splittedTriangles[2].c_str())-1));
                     }
-                    facesVecticesIndexes.push_back(vecticesIndexes);
+                    trianglesVecticesIndexes.push_back(vecticesIndexes);
                 }    
             }
         };
 
         ~Obj() {};
 
-        uint nbFaces = 0;
-        uint failedFaces = 0;
+        uint nbTriangles = 0;
+        uint failedTriangles = 0;
 
         void addVertices(Vector<double> vertex) {
             v.push_back(vertex);
@@ -99,7 +99,7 @@ class Obj {
         }
 
         std::vector<std::vector<Vector<int>>> getIndexes() {
-            return facesVecticesIndexes;
+            return trianglesVecticesIndexes;
         }
 
         void print() {
@@ -115,10 +115,10 @@ class Obj {
                 vn[i].printCoord();
             }
 
-            for (uint i=0;i<facesVecticesIndexes.size();i++) {
+            for (uint i=0;i<trianglesVecticesIndexes.size();i++) {
                 std::cout << "f" << std::endl;
-                for (uint j=0;j<facesVecticesIndexes[j].size();j++) {
-                    facesVecticesIndexes[i][j].printCoord();
+                for (uint j=0;j<trianglesVecticesIndexes[j].size();j++) {
+                    trianglesVecticesIndexes[i][j].printCoord();
                 }
             }
         }
