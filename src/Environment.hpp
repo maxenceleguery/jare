@@ -32,7 +32,7 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 4; //8
+        uint samplesByThread = 128; //8
         uint threadsByRay = 1; //1
 
         Pixel backgroundColor = Pixel(0,0,0);
@@ -41,7 +41,9 @@ class Environment {
     public:
         Environment() {};
         Environment(Camera* cam0) : cam(cam0) {};
-        ~Environment() {};
+        ~Environment() {
+            meshes.free();
+        };
 
         void setMode(const Mode m) {
             mode = m;
@@ -69,7 +71,7 @@ class Environment {
             addSquare(v1, v2, v3, v4, Material(color));
         }
 
-        void addObj(const std::string name, Vector<double> offset, double scale, Material mat) {
+        void addObj(const std::string name, const Vector<double>& offset, const double scale, const Material mat) {
             std::cout << "Loading " << name.c_str() << std::endl;
             Obj obj = Obj(name);
             //obj.print();
@@ -195,6 +197,12 @@ class Environment {
                     cam->setPixel(h*W+w, color);
                 }
             }
+            if (mode==BVH_RAYTRACING) {
+                for (uint i=0; i<BVHs.size(); i++) {
+                    BVHs[i].free();
+                }
+                BVHs.free();
+            }
         }
 
         void renderCuda() {
@@ -296,7 +304,6 @@ class Environment {
             }
         }
         
-        /*
         void renderCudaBVH() {
             uint H = cam->getHeight();
             uint W = cam->getWidth();
@@ -304,50 +311,27 @@ class Environment {
             Array<BVH> BVHs = Array<BVH>();
             if (mode==BVH_RAYTRACING) {
                 for (uint i=0; i<meshes.size(); i++) {
-                    BVHs.push_back(BVH(meshes[i]));
+                    BVH bvh = BVH(meshes[i]);
+                    bvh.cuda();
+                    BVHs.push_back(bvh);
                 }
                 std::cout << "BVHs done" << std::endl;
+                BVHs.cuda();
             }
 
             auto start = std::chrono::steady_clock::now();
 
-            Array<BVH>* bvhs_gpu;
-            cudaErrorCheck(cudaMalloc(&bvhs_gpu, sizeof(Array<BVH>)));
-            cudaErrorCheck(cudaMemcpy(bvhs_gpu, &BVHs, sizeof(Array<BVH>), cudaMemcpyHostToDevice));
+            Array<Pixel> colors = Array<Pixel>(threadsByRay * W * H);
+            colors.cuda();
 
-            Triangle* triangles_cpu = new Triangle[nbTriangles];
-            for (uint i=0;i<nbTriangles;i++) {
-                Vector<double>* vertices = triangles[i].getVertices();
-
-                uint nbVertices = 3;
-
-                Vector<double>* vertices_gpu;
-                cudaErrorCheck(cudaMalloc(&vertices_gpu, nbVertices*sizeof(Vector<double>)));
-                cudaErrorCheck(cudaMemcpy(vertices_gpu, vertices, nbVertices*sizeof(Vector<double>), cudaMemcpyHostToDevice));
-                triangles_cpu[i].setvertices(vertices_gpu);
-                triangles_cpu[i].setMaterial(triangles[i].getMaterial());
-            }
-
-            Triangle* triangles_gpu;
-            cudaErrorCheck(cudaMalloc(&triangles_gpu, nbTriangles*sizeof(Triangle)));
-            cudaErrorCheck(cudaMemcpy(triangles_gpu, triangles_cpu, nbTriangles*sizeof(Triangle), cudaMemcpyHostToDevice));
-
-            Pixel* colors = new Pixel[threadsByRay * W * H];
-            Pixel* colors_gpu;
-            cudaErrorCheck(cudaMalloc(&colors_gpu, threadsByRay*H*W*sizeof(Pixel)));
-            cudaErrorCheck(cudaMemcpy(colors_gpu, colors, threadsByRay*H*W*sizeof(Pixel), cudaMemcpyHostToDevice));
-
-            Ray* rays = new Ray[W * H];
-            Ray* rays_gpu;
+            Array<Ray> rays = Array<Ray>(W * H);
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w) {
                     Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                     rays[h*W+w] = Ray(cam->getPosition(),direction);
                 }
             }
-            cudaErrorCheck(cudaMalloc(&rays_gpu, H*W*sizeof(Ray)));
-            cudaErrorCheck(cudaMemcpy(rays_gpu, rays, H*W*sizeof(Ray), cudaMemcpyHostToDevice));
-            delete[] rays;
+            rays.cuda();
 
             auto end = std::chrono::steady_clock::now();
 
@@ -361,25 +345,31 @@ class Environment {
             int state  = rand() % 50 + 1;
 
             start = std::chrono::steady_clock::now();
-            rayTraceBVH(rays_gpu,triangles_gpu,colors_gpu,nbTriangles,nblocks,blocksize,W,H,samplesByThread,threadsByRay,state);
+            rayTraceBVH(rays, BVHs, colors, nblocks, blocksize, W,H,samplesByThread,threadsByRay,state);
             end = std::chrono::steady_clock::now();
             elapsed_seconds = end-start;
             std::cout << "Raytracing time:\t" << elapsed_seconds.count() << "s\n";
 
             start = std::chrono::steady_clock::now();
-            cudaErrorCheck(cudaMemcpy(colors, colors_gpu, threadsByRay*H*W*sizeof(Pixel), cudaMemcpyDeviceToHost));
+            colors.cpu();
             end = std::chrono::steady_clock::now();
             elapsed_seconds = end-start;
             std::cout << "Copy back to host:\t" << elapsed_seconds.count() << "s\n";
 
             start = std::chrono::steady_clock::now();
-            cudaErrorCheck(cudaFree(colors_gpu));
-            for (uint i=0;i<nbTriangles;i++) {
-                cudaErrorCheck(cudaFree(triangles_cpu[i].getVertices()));
+
+            BVHs.cpu();
+            if (mode==BVH_RAYTRACING) {
+                for (uint i=0; i<BVHs.size(); i++) {
+                    BVHs[i].cpu();
+                    BVHs[i].free();
+                }
             }
-            cudaErrorCheck(cudaFree(triangles_gpu));
-            cudaErrorCheck(cudaFree(rays_gpu));
-            delete[] triangles_cpu;
+            BVHs.free();
+            meshes.free();
+
+            rays.cpu();
+            rays.free();
             end = std::chrono::steady_clock::now();
             elapsed_seconds = end-start;
             std::cout << "Free memory:\t\t" << elapsed_seconds.count() << "s\n";
@@ -388,9 +378,8 @@ class Environment {
                 for(uint w = 0; w < W; ++w)
                     cam->setPixel(h*W+w, Pixel(colors[h*W + w].toVector().pow(1/cam->getGamma())));
             }
-            delete[] colors;
-
-            /*
+            colors.free();
+            
             Image img = Image(cam);
             //Image img2 = img.convolve(img.gaussianKernel,3);
             
@@ -399,8 +388,8 @@ class Environment {
                     cam->setPixel(h*W+w, img.getPixel(w,h));
                 }
             }
-            */
-        //}
+            
+        }
 
         void addBackground(const Pixel& color) {
             backgroundColor = color;

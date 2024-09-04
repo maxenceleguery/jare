@@ -15,7 +15,9 @@
 class Triangle {
 
     private:
-        Vector<double> vertices[3];
+        Vector<double> vertex0;
+        Vector<double> vertex1;
+        Vector<double> vertex2;
         const uint nbVertices = 3;
         Material material;
 
@@ -23,9 +25,9 @@ class Triangle {
         __host__ __device__ Triangle() {};
 
         __host__ __device__ Triangle(const Triangle& tri) {
-            vertices[0] = tri.getVertex(0);
-            vertices[1] = tri.getVertex(1);
-            vertices[2] = tri.getVertex(2);
+            vertex0 = tri.getVertex(0);
+            vertex1 = tri.getVertex(1);
+            vertex2 = tri.getVertex(2);
 
             material = tri.material;
         };
@@ -35,29 +37,30 @@ class Triangle {
         };
 
         __host__ __device__ Triangle(Vector<double>& vec0, Material mat0) : Triangle() {
-            vertices[0] = vec0;
+            vertex0 = vec0;
             material = mat0;
         };
 
         __host__ __device__ Triangle(Vector<double>& vec0, Pixel color0) : Triangle(vec0, Material(color0)) {};
 
-        __host__ __device__ ~Triangle() {
-            //if (vertices != nullptr)
-                //delete[] vertices;
-        };
-
         __host__ __device__ Vector<double> getVertex(const uint i) const {
-            if (i < nbVertices)
-                return vertices[i];
+            if (i == 0)
+                return vertex0;
+            else if (i == 1)
+                return vertex1;
+            else if (i == 2)
+                return vertex2;
             else
                 return Vector<double>();
         }
 
-        __host__ __device__ void setvertex(const uint i, const Vector<double>& ptr) {
-            if (i < nbVertices)
-                vertices[i]=ptr;
-            else
-                vertices[i]=Vector<double>();
+        __host__ __device__ void setvertex(const uint i, const Vector<double>& vec) {
+            if (i == 0)
+                vertex0 = vec;
+            else if (i == 1)
+                vertex1 = vec;
+            else if (i == 2)
+                vertex2 = vec;
         }
 
         __host__ __device__ uint getNbVertices() const {
@@ -73,16 +76,11 @@ class Triangle {
         }
 
         __host__ __device__ Vector<double> getNormalVector() const {
-            return (vertices[1]-vertices[0]).crossProduct(vertices[2]-vertices[0]).normalize();
+            return (vertex1-vertex0).crossProduct(vertex2-vertex0).normalize();
         }
 
         __host__ __device__ Vector<double> getBarycenter() const {
-            Vector<double> center = vertices[0];
-                for (uint i=1;i<nbVertices;i++) {
-                    center+=vertices[i];
-                }
-            center/=nbVertices;
-            return center;
+            return (vertex0 + vertex1 + vertex2)/3;
         }
 
         __host__ __device__ bool isPlaneValid() const {
@@ -92,17 +90,15 @@ class Triangle {
                 Vector<double> normalVector = getNormalVector();
                 if (normalVector == Vector<double>())
                     return false;
-                for (uint i=0; i<nbVertices;i++) {
-                    if (std::abs(normalVector*(vertices[i]-vertices[0]).normalize()) > 1E-3)
-                        return false;
-                }
+                if (std::abs(normalVector*(vertex1-vertex0).normalize()) > 1E-3 || std::abs(normalVector*(vertex2-vertex0).normalize()) > 1E-3)
+                    return false;
                 return true;
             }
         }
 
         __host__ __device__ bool isOnPlane(const Vector<double>& vec) const {
             Vector<double> normalVector = getNormalVector();
-            return std::abs( (vec-vertices[0]).normalize()*normalVector ) < 1E-6;
+            return std::abs( (vec-vertex0).normalize()*normalVector ) < 1E-6;
         }
 
         __host__ __device__ bool isInInterval(const double value, const double lhs, const double rhs) const {
@@ -116,21 +112,28 @@ class Triangle {
         __host__ __device__ bool isInPolygone(const Vector<double>& vec) const {
             if (isOnPlane(vec)) {
                 if (nbVertices == 3) {
-                    double area = triangleArea(vertices[0], vertices[1], vertices[2]);
-                    double alpha = triangleArea(vec, vertices[1], vertices[2])/area;
-                    double beta = triangleArea(vec, vertices[2], vertices[0])/area;
-                    double gamma = triangleArea(vec, vertices[0], vertices[1])/area;
+                    double area = triangleArea(vertex0, vertex1, vertex2);
+                    double alpha = triangleArea(vec, vertex1, vertex2)/area;
+                    double beta = triangleArea(vec, vertex2, vertex0)/area;
+                    double gamma = triangleArea(vec, vertex0, vertex1)/area;
                     return isInInterval(alpha, 0., 1.) && isInInterval(beta, 0., 1.) && isInInterval(gamma, 0., 1.) && std::abs(alpha + beta + gamma - 1) < 1E-6;
                 } else {
                     Vector<double> center = getBarycenter();
                     if (isOnPlane(center)) {
                         Line line0 = Line(center,vec-center);
                         uint counter = 0;
-                        for (uint i=0;i<nbVertices;i++) {
-                            Line line = Line(vertices[i],vertices[(i+1)%nbVertices]-vertices[i]);
-                            if (line0.IsIntersected(line))
-                                counter++;
-                        }
+
+                        Line line = Line(vertex0,vertex1-vertex0);
+                        if (line0.IsIntersected(line))
+                            counter++;
+
+                        line = Line(vertex1,vertex2-vertex1);
+                        if (line0.IsIntersected(line))
+                            counter++;
+
+                        line = Line(vertex2,vertex0-vertex1);
+                        if (line0.IsIntersected(line))
+                            counter++;
                         return (counter%2 == 0);
                     }
                 }
@@ -155,13 +158,11 @@ class Triangle {
             Vector<double> direction = line.getDirection();
             Vector<double> normalVector = getNormalVector();
             if (std::abs(direction*normalVector) > 1E-6) {
-                double k = (normalVector*(vertices[0]) - normalVector*startingPoint)/(direction*normalVector);
+                double k = (normalVector*(vertex0) - normalVector*startingPoint)/(direction*normalVector);
                 Vector<double> intersectionPoint = startingPoint + direction*k;
                 if (isInPolygone(intersectionPoint) && k>1E-6) {
-                    for (uint i=0;i<nbVertices;i++) {
-                        if (intersectionPoint==vertices[i])
-                            return Vector<double>();
-                    }
+                    if (intersectionPoint==vertex0 || intersectionPoint==vertex1 || intersectionPoint==vertex2)
+                        return Vector<double>();
                     return intersectionPoint;
                 }
             }
@@ -169,23 +170,25 @@ class Triangle {
         }
 
         __host__ void print() const {
-            for (uint i=0;i<nbVertices;i++) {
-                std::cout << "Vector " << i+1 << " : ";
-                vertices[i].printCoord();
-            }
+            std::cout << "Vector 1 : ";
+            vertex0.printCoord();
+            std::cout << "Vector 2 : ";
+            vertex1.printCoord();
+            std::cout << "Vector 3 : ";
+            vertex2.printCoord();
         }
 
         __host__ __device__ void move(const Vector<double>& vec) {
-            for (uint i=0;i<nbVertices;i++) {
-                vertices[i] += vec;
-            }
+            vertex0 += vec;
+            vertex1 += vec;
+            vertex2 += vec;
         }
 
         __host__ __device__ Triangle operator=(const Triangle& tri) {
             if (this != &tri) {
-                vertices[0] = tri.getVertex(0);
-                vertices[1] = tri.getVertex(1);
-                vertices[2] = tri.getVertex(2);
+                vertex0 = tri.getVertex(0);
+                vertex1 = tri.getVertex(1);
+                vertex2 = tri.getVertex(2);
 
                 material = tri.material;
             }

@@ -137,8 +137,10 @@ class Ray : public Line {
 
             // Initialize hit info
             Hit hit;
-            hit.setHasHit(determinant >= 1E-8 && dst >= 1E-6 && u >= 1E-6 && v >= 1E-6 && w >= 1E-6);
-            hit.setPoint(point + direction * dst);
+            Vector<double> intersection = point + direction * dst;
+            //const bool edge = intersection == tri.getVertex(0) || intersection == tri.getVertex(1) || intersection == tri.getVertex(2);
+            hit.setHasHit(/*!edge &&*/ determinant >= 1E-8 && dst >= 1E-6 && u >= 1E-6 && v >= 1E-6 && w >= 1E-6);
+            hit.setPoint(intersection);
             hit.setNormal(tri.getNormalVector());
             hit.setMaterial(tri.getMaterial());
             hit.setDistance(dst);
@@ -172,23 +174,14 @@ class Ray : public Line {
         }
         */
 
-        __host__ void rayTriangleBVH(const BVH& bvh, uint nodeOffset, uint triOffset, Hit& hit) {
+        __host__ __device__ void rayTriangleBVH(const BVH& bvh, const uint nodeOffset, const uint triOffset, Hit& hit) {
             Hit finalHit;
             uint stack[128];
             uint stackIndex = 0;
             stack[stackIndex++] = nodeOffset + 0;
 
             while (stackIndex > 0) {
-                if (stackIndex >= 128) {
-                    throw std::runtime_error("Stack index too large : " + std::to_string(stackIndex) + ". Number of nodes : "+std::to_string(bvh.allNodes.size()));
-                }
-                if (stack[stackIndex-1] >= bvh.allNodes.size()) {
-                    throw std::runtime_error("Node index too large with stackindex "+ std::to_string(stackIndex) +": " + std::to_string(stack[stackIndex]) + "/" + std::to_string(bvh.allNodes.size()));
-                }
-
-                //std::cout << "ICI 1 :" << stackIndex << " " << stack[stackIndex-1] << std::endl;
                 const Node node = bvh.allNodes[stack[--stackIndex]];
-                //std::cout << "ICI 2 :" << node.getTriangleCount() << std::endl;
                 const bool isLeaf = node.getTriangleCount() > 0;
 
                 if (isLeaf) {
@@ -301,20 +294,23 @@ class Ray : public Line {
             return Pixel(incomingLight);
         }
 
-        __host__ __device__ Vector<double> rayTraceBVHDevice(const int idx, Ray ray, Array<BVH>* bvhs) {
+        __device__ Vector<double> rayTraceBVHDevice(const int idx, Ray ray, Array<BVH> bvhs) {
             Vector<double> incomingLight = Vector<double>();
             Vector<double> rayColor = Vector<double>(1.,1.,1.);
             for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
                 Hit hit = Hit();
-                for (uint i = 0; i<bvhs->size(); i++) {
-                    ray.rayTriangleBVH((*bvhs)[i], 0, 0, hit);
+                for (uint i = 0; i<bvhs.size(); i++) {
+                    ray.rayTriangleBVH(bvhs[i], 0, 0, hit);
                 }
                 if (hit.getHasHit()) {
                     Material mat = hit.getMaterial();
                     Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(),idx);
                     Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
                     Vector<double> finalDirection = (diffusionDir*(1-mat.getSpecularSmoothness()) + specularDir*mat.getSpecularSmoothness()).normalize();
-                    ray = Ray(hit.getPoint(),finalDirection);
+                    
+                    // New ray after bounce
+                    ray = Ray(hit.getPoint(), finalDirection);
+
                     Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
                     incomingLight += emittedLight.productTermByTerm(rayColor);
                     rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;

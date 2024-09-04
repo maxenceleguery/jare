@@ -174,9 +174,9 @@ void objRender() {
 
 	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.), Colors::WHITE);
 
-	light.setColor(Colors::GREEN);
-	env.addSquare(Vector(0.,-2.,0.)*2,Vector(0.,-2.,2.)*2,Vector(2.,-2.,2.)*2,Vector(2.,-2.,0.)*2, light); // left panel 
 	light.setColor(Colors::RED);
+	env.addSquare(Vector(0.,-2.,0.)*2,Vector(0.,-2.,2.)*2,Vector(2.,-2.,2.)*2,Vector(2.,-2.,0.)*2, light); // left panel 
+	light.setColor(Colors::GREEN);
 	env.addSquare(Vector(0.,2.,0.)*2,Vector(2.,2.,0.)*2,Vector(2.,2.,2.)*2,Vector(0.,2.,2.)*2, light); // right panel
 
 	//env.addSquare(Vector(0.,0.,0.),Vector(0.,0.,2.),Vector(2.,2.,2.),Vector(2.,2.,0.), Colors::YELLOW);
@@ -187,7 +187,7 @@ void objRender() {
 
 	env.addBackground(Colors::BLACK);
 	env.setMode(Mode::BVH_RAYTRACING);
-	env.render();
+	env.renderCudaBVH();
 	std::string path = "./render4/image";
 	std::string format = ".png";
 	path.append(std::to_string(0));

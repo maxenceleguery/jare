@@ -130,27 +130,20 @@ class Node {
 
 class BVH {
     private:
-        uint maxDepth = 5;
+        uint maxDepth = 10;
     
     public:
         Array<Node> allNodes;
         Mesh allTriangles;
     
         __host__ __device__ BVH() {}; 
-        __host__ __device__ BVH(const Mesh& mesh, const uint maxDepth = 5) : maxDepth(maxDepth), allTriangles(mesh) {
+        __host__ __device__ BVH(const Mesh mesh, const uint maxDepth = 5) : maxDepth(maxDepth), allTriangles(mesh) {
             BoundingBox bounds;
             bounds.growToInclude(mesh);
 
-            Node root = Node(bounds);
-            //root.setTriangleCount(allTriangles.size());
-            //root.setChildIndex(1);
-            allNodes.push_back(root);
+            allNodes.push_back(Node(bounds));
             split(0, 0, allTriangles.size(), 0);
         };
-
-        __host__ __device__ ~BVH() {
-            //delete root;
-        }
 
         __host__ __device__ static double NodeCost(const Vector<double>& size, const int numTriangles) {
             double halfArea = size.getX() * size.getY() + size.getX() * size.getZ() + size.getY() * size.getZ();
@@ -196,14 +189,27 @@ class BVH {
 
                 allNodes[parentIndex].setChildIndex(childIndexLeft);
 
-                //if (childA.getTriangleCount() > 0 && childB.getTriangleCount() > 0) {
-                    split(childIndexLeft, triGlobalStart, numOnLeft, depth + 1);
-                    split(childIndexRight, triGlobalStart + numOnLeft, numOnRight, depth + 1);
-                //} 
+                split(childIndexLeft, triGlobalStart, numOnLeft, depth + 1);
+                split(childIndexRight, triGlobalStart + numOnLeft, numOnRight, depth + 1);
             } else {
                 allNodes[parentIndex].setTriangleIndex(triGlobalStart);
                 allNodes[parentIndex].setTriangleCount(triNum);
             }
+        }
+
+        __host__ void cuda() {
+            allNodes.cuda();
+            allTriangles.cuda();
+        }
+
+        __host__ void cpu() {
+            allNodes.cpu();
+            allTriangles.cpu();
+        }
+
+        __host__ void free() {
+            allNodes.free();
+            allTriangles.free();
         }
 };
 
