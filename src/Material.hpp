@@ -7,12 +7,14 @@
 class Material {
     private:
         Pixel emissionColor;
+        Pixel specularColor;
         double diffusion = 0.;
         double specularSmoothness = 0.;
+        double specularProb = 0.;
         double emissionStrengh = 0.;
     public:
-        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), diffusion(0), specularSmoothness(0) {};
-        __host__ __device__ Material(Pixel color0) : emissionColor(color0), diffusion(0), specularSmoothness(0) {};
+        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), specularColor(Pixel(0,0,0)), diffusion(0), specularSmoothness(0) {};
+        __host__ __device__ Material(Pixel color0) : emissionColor(color0), specularColor(color0), diffusion(0), specularSmoothness(0) {};
         __host__ __device__ Material(Pixel color0, double diffusion) : emissionColor(color0), diffusion(diffusion), specularSmoothness(0) {};
         __host__ __device__ Material(Pixel color0, double diffusion, double specularSmoothness) : emissionColor(color0), diffusion(diffusion), specularSmoothness(specularSmoothness) {};
         __host__ __device__ Material(Pixel color0, double diffusion, double specularSmoothness, double emissionStrengh) : emissionColor(color0), diffusion(diffusion), specularSmoothness(specularSmoothness), emissionStrengh(emissionStrengh) {};
@@ -23,6 +25,13 @@ class Material {
         }
         __host__ __device__ void setColor(const Pixel color) {
             emissionColor=color;
+        }
+
+        __host__ __device__ Pixel getSpecularColor() const {
+            return specularColor;
+        }
+        __host__ __device__ void setSpecularColor(const Pixel color) {
+            specularColor=color;
         }
 
         __host__ __device__ double getDiffusion() const {
@@ -37,6 +46,13 @@ class Material {
         }
         __host__ __device__ void setSpecularSmoothness(const double ss) {
             specularSmoothness=ss;
+        }
+
+        __host__ __device__ double getSpecularProb() const {
+            return specularProb;
+        }
+        __host__ __device__ void setSpecularProb(const double sp) {
+            specularProb=sp;
         }
 
         __host__ __device__ double getEmissionStrengh() const {

@@ -7,6 +7,8 @@
 #include <fstream>
 #include <png.h>
 
+#include <SDL2/SDL.h>
+
 #define ROT_RIGHT 2000
 #define ROT_FRONT 2001
 #define ROT_UP 2002
@@ -25,7 +27,13 @@ class Camera {
         double capteurHeight;
         double fov = 0.01;
         double gamma = 2.0;
+        uint FPS = 60;
+
         std::vector<Pixel> pixels;
+
+        SDL_Window* window;
+        SDL_Renderer* renderer;
+        SDL_Texture* texture;
 
     public:
         Camera(){};
@@ -160,5 +168,48 @@ class Camera {
             write_png_file(filename, image_data);
 
             delete[] image_data;
+        }
+
+        void initWindow() {
+            SDL_Init(SDL_INIT_EVERYTHING);
+            window = SDL_CreateWindow("Raytracer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0);
+            renderer = SDL_CreateRenderer(window, -1, 0);
+        }
+
+        void closeWindow() {
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
+        }
+
+        void updateTexture() {
+            SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 24, 0, 0, 0, 0);
+            unsigned char* surface_pixels = (unsigned char*)surface -> pixels;
+            for(uint h = 0; h < height; ++h) {
+                for(uint w = 0; w < width; ++w) {
+                    surface_pixels[3 * (h * surface->w + w) + 0] = pixels[h*width+w].getB();
+                    surface_pixels[3 * (h * surface->w + w) + 1] = pixels[h*width+w].getG();
+                    surface_pixels[3 * (h * surface->w + w) + 2] = pixels[h*width+w].getR();
+                }
+            }
+            SDL_DestroyTexture(texture);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_FreeSurface(surface);
+        }
+
+        void showImage() {
+            initWindow();
+
+            SDL_Event e;
+            bool running = true;
+            while(running) {
+                while (SDL_PollEvent(&e)) {
+                    if (e.type == SDL_QUIT) running = false;
+                }
+                updateTexture();
+                SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+                SDL_RenderPresent(renderer);
+                SDL_Delay((Uint32)1./FPS);
+            }
+            closeWindow();
         }
 };

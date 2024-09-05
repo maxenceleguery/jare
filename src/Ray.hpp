@@ -8,6 +8,7 @@
 #include "Hit.hpp"
 #include "Mesh.hpp"
 #include "BVH.hpp"
+#include "utils/MinMax.hpp"
 
 #include <cuda_runtime.h>
 #include <curand.h>
@@ -66,11 +67,33 @@ class Ray : public Line {
             return direction - normal*2*(direction*normal);
         }
 
+        // TODO Background light
+        __host__ __device__ Vector<double> envLight(Ray ray) {
+            if (true) {
+                return Vector<double>();
+            }
+            Vector<double> groundColor = Pixel(165,42,42).toVector();
+            Vector<double> skyColorHorizon = Pixel(157, 232, 229).toVector();
+            Vector<double> skyColorZenith = Pixel(87, 232, 229).toVector();
+            Vector<double> sunLightDirection = Vector<double>(0, 100, 100.);
+            double sunFocus = 0.001;
+            double sunIntensity = 0.001;
+
+
+            double skyGradientT = std::pow(Utils::smoothStep(0.0, 0.4, ray.direction.getZ()), 0.35);
+            Vector<double> skyGradient = skyColorHorizon.lerp(skyColorZenith, skyGradientT);
+            double sun = std::pow(Utils::max(0., ray.direction*sunLightDirection), sunFocus) * sunIntensity;
+
+            double groundToSkyT = Utils::smoothStep(-0.01, 0.0, ray.direction.getZ());
+            return groundColor.lerp(skyGradient, groundToSkyT) + sun * (groundToSkyT >= 1);
+        }
+
         __host__ __device__ void updateRay(Ray& ray, const Hit& hit, uint state) {
             Material mat = hit.getMaterial();
             Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(), state);
             Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
-            Vector<double> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness()).normalize();
+            bool isSpecularBounce = mat.getSpecularProb() >= randomValue(state);
+            Vector<double> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness() * isSpecularBounce).normalize();
             // New ray after bounce
             ray.setPoint(hit.getPoint());
             ray.setDirection(finalDirection);
@@ -80,7 +103,7 @@ class Ray : public Line {
             Material mat = hit.getMaterial();
             Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
             incomingLight += emittedLight.productTermByTerm(rayColor);
-            rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;
+            rayColor = rayColor.productTermByTerm(mat.getColor().toVector()*(hit.getNormal()*ray.getDirection()) * 2);
         }
 
         // Thanks to https://tavianator.com/2011/ray_box.html
@@ -200,7 +223,13 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, incomingLight, rayColor);
+                    const double p = rayColor.max();
+                    if (randomValue(state) >= p) {
+                        break;
+                    }
+                    rayColor *= 1.0f / p;
                 } else {
+                    incomingLight += envLight(*this)*rayColor;
                     break;
                 }
             }
@@ -215,7 +244,13 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, incomingLight, rayColor);
+                    const double p = rayColor.max();
+                    if (randomValue(idx) >= p) {
+                        break;
+                    }
+                    rayColor *= 1.0f / p;
                 } else {
+                    incomingLight += envLight(ray)*rayColor;
                     break;
                 }
             }
@@ -233,7 +268,13 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, incomingLight, rayColor);
+                    const double p = rayColor.max();
+                    if (randomValue(state) >= p) {
+                        break;
+                    }
+                    rayColor *= 1.0f / p;
                 } else {
+                    incomingLight += envLight(*this)*rayColor;
                     break;
                 }
             }
@@ -251,7 +292,14 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, incomingLight, rayColor);
+
+                    const double p = rayColor.max();
+                    if (randomValue(idx) >= p) {
+                        break;
+                    }
+                    rayColor *= 1.0f / p;
                 } else {
+                    incomingLight += envLight(ray)*rayColor;
                     break;
                 }
             }

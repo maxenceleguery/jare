@@ -123,6 +123,14 @@ void objRender() {
 	path.append(std::to_string(0));
 	path.append(format);
 	cam.renderImage(path.c_str());
+	cam.showImage();
+}
+
+void testSDL() {
+	Vector<double> origine = Vector<double>(-3.,0.,1.5);
+	Vector<double> front = Vector<double>(1,0,-0.2);
+	Camera cam = Camera(origine,front,1280,720);
+	cam.showImage();
 }
 
 int main() {

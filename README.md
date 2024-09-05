@@ -8,6 +8,7 @@ Require a Nvidia graphic card to use CUDA acceleration.
 ```bash
 $ sudo apt install libpng-dev
 $ sudo apt install nvidia-cuda-toolkit
+$ sudo apt-get install libsdl2-dev
 ```
 
 ## Compilation
@@ -19,7 +20,7 @@ $ make all
 ## Execution
 
 ```bash
-$ build/main
+$ make run
 ```
 
 ## Some results

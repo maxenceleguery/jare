@@ -90,6 +90,9 @@ namespace Colors {
     const Pixel MAGENTA = Pixel(255,0,255);
     const Pixel BLACK = Pixel(0,0,0);
     const Pixel WHITE = Pixel(255,255,255);
+    
+    const Pixel BROWN = Pixel(165,42,42);
+    const Pixel SKY_BLUE = Pixel(87, 232, 229);
 }
 
 #endif

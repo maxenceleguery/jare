@@ -16,7 +16,7 @@ class Line {
         }
     public:
         __host__ __device__ Line(){};
-        __host__ __device__ Line(Vector<double> point0, Vector<double> direction0) : point(point0), direction(direction0), invDir(direction0.invCoords()) {};
+        __host__ __device__ Line(Vector<double> point0, Vector<double> direction0) : point(point0), direction(direction0.normalize()), invDir(direction.invCoords()) {};
         __host__ __device__ ~Line(){};
 
         __host__ __device__ Vector<double> getPoint() const {
@@ -33,6 +33,7 @@ class Line {
 
         __host__ __device__ void setDirection(const Vector<double>& d) {
             direction=d;
+            direction.normalize();
             invDir=d.invCoords();
         } 
 

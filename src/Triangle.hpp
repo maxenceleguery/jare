@@ -21,6 +21,9 @@ class Triangle {
         const uint nbVertices = 3;
         Material material;
 
+        Vector<double> mini;
+        Vector<double> maxi;
+
     public:
         __host__ __device__ Triangle() {};
 
@@ -28,6 +31,9 @@ class Triangle {
             vertex0 = tri.getVertex(0);
             vertex1 = tri.getVertex(1);
             vertex2 = tri.getVertex(2);
+
+            mini = min();
+            maxi = max();
 
             material = tri.material;
         };
@@ -42,6 +48,22 @@ class Triangle {
         };
 
         __host__ __device__ Triangle(Vector<double>& vec0, Pixel color0) : Triangle(vec0, Material(color0)) {};
+
+        __host__ __device__ Vector<double> min() const {
+            return vertex0.min(vertex1.min(vertex2));
+        }
+
+        __host__ __device__ Vector<double> max() const {
+            return vertex0.max(vertex1.max(vertex2));
+        }
+
+        __host__ __device__ Vector<double> getMin() const {
+            return mini;
+        }
+
+        __host__ __device__ Vector<double> getMax() const {
+            return maxi;
+        }
 
         __host__ __device__ Vector<double> getVertex(const uint i) const {
             if (i == 0)
@@ -61,6 +83,9 @@ class Triangle {
                 vertex1 = vec;
             else if (i == 2)
                 vertex2 = vec;
+
+            mini = min();
+            maxi = max();
         }
 
         __host__ __device__ Material getMaterial() const {
@@ -101,6 +126,9 @@ class Triangle {
             vertex0 += vec;
             vertex1 += vec;
             vertex2 += vec;
+
+            mini = min();
+            maxi = max();
         }
 
         __host__ __device__ Triangle operator=(const Triangle& tri) {
@@ -110,6 +138,9 @@ class Triangle {
                 vertex2 = tri.getVertex(2);
 
                 material = tri.material;
+
+                mini = min();
+                maxi = max();
             }
             return *this;
         }

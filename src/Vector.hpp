@@ -235,8 +235,16 @@ class Vector {
             return Vector<T>(Utils::max(x, vec2.x), Utils::max(y, vec2.y), Utils::max(z, vec2.z));
         }
 
+        __host__ __device__ T max() const {
+            return Utils::max(x, Utils::max(y, z));
+        }
+
         __host__ __device__ Vector<T> min(const Vector<T>& vec2) const {
             return Vector<T>(Utils::min(x, vec2.x), Utils::min(y, vec2.y), Utils::min(z, vec2.z));
+        }
+
+        __host__ __device__ T min() const {
+            return Utils::min(x, Utils::min(y, z));
         }
 
         __host__ __device__ Vector<T> lerp(const Vector<T>& vec2, const double percentage) const {

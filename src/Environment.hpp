@@ -32,7 +32,7 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 128; //8
+        uint samplesByThread = 64;
         uint threadsByRay = 1; //1
 
         Pixel backgroundColor = Pixel(0,0,0);
