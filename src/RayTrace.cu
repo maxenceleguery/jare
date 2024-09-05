@@ -9,19 +9,6 @@ void cudaAssert(const cudaError err, const char *file, const int line) {
         exit(1);
     } 
 }
-__global__ void rayTraceCuda(Ray* rays, Triangle* triangles, Pixel* colors, uint nbTriangles, uint W, uint H, uint samplesByThread, uint threadsByRay, int state) {
-
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    int idx2 = idx%(W*H);
-
-    if (idx < threadsByRay*W*H) {
-        Vector<double> incomingLight;
-        for (uint i=0;i<samplesByThread;i++)
-            incomingLight += rays[idx2].rayTrace3(idx*(i+1)*state,rays[idx2],triangles,nbTriangles);
-        incomingLight/=samplesByThread;
-        colors[idx] = Pixel(incomingLight);
-    }
-}
 
 __global__ void rayTraceBVHCuda(Array<Ray> rays, Array<BVH> bvhs, Array<Pixel> colors, uint W, uint H, uint samplesByThread, uint threadsByRay, int state) {
 
@@ -47,16 +34,6 @@ __global__ void threadsAggreg(Array<Pixel> colors, uint threadsByRay) {
         partialColor/=threadsByRay;
         colors[idx] = Pixel(partialColor);
     }
-}
-
-void rayTrace(Ray* rays, Triangle* triangles, Pixel* colors, uint nbTriangles,uint nblocks,uint blocksize,uint W,uint H,uint samplesByThread,uint threadsByRay,int state) {
-    rayTraceCuda<<<nblocks,blocksize>>>(rays,triangles,colors,nbTriangles,W,H,samplesByThread,threadsByRay,state);
-    cudaErrorCheck( cudaPeekAtLastError() ); // Checks for launch error
-    cudaErrorCheck( cudaDeviceSynchronize() ); // Checks for execution error
-
-    //threadsAggreg<<<nblocks,blocksize>>>(colors, threadsByRay);
-    //cudaErrorCheck( cudaPeekAtLastError() ); // Checks for launch error
-    //cudaErrorCheck( cudaDeviceSynchronize() ); // Checks for execution error
 }
 
 void rayTraceBVH(Array<Ray> rays, Array<BVH> bvhs, Array<Pixel> colors, uint nblocks,uint blocksize, uint W, uint H, uint samplesByThread, uint threadsByRay, int state) {

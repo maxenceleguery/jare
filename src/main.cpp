@@ -45,14 +45,9 @@ void testTriangle() {
 	Vector<double> ez = Vector(1.,1.,1.);
 	Vector<double> vec = Vector(1.,1.,0.);
 	Triangle triangle = Triangle(ex,Pixel(255,0,0));
-	//triangle.addVectex(ey);
-	//triangle.addVectex(ez);
-	//triangle.addVectex(vec);
+	triangle.setvertex(1, ey);
+	triangle.setvertex(2, ez);
 	triangle.print();
-	if (triangle.isPlaneValid())
-		std::cout << "Plane valid" << std::endl;
-	else
-		std::cout << "Plane not valid" << std::endl;
 	std::cout << "Normal vector : ";
 	triangle.getNormalVector().printCoord();
 
@@ -63,17 +58,7 @@ void testTriangle() {
 		std::cout << "Point not on plane" << std::endl;
 
 	Vector<double> vec3 = Vector(0.5,0.5,10.);
-	if (triangle.isInPolygone(vec3))
-		std::cout << "Point in polygone" << std::endl;
-	else
-		std::cout << "Point not in polygone" << std::endl;
 
-	/*std::vector<double> planeEq = triangle.getPlaneEquation();
-	for (uint i=0;i<planeEq.size();i++) {
-		std::cout << planeEq[i] << std::endl;
-	}*/
-
-	triangle.getIntersection(Line(Vector<double>(0.5,0.,0.5),Vector<double>(0.,1.,0.))).printCoord();
 }
 
 void testMatrix() {
@@ -105,61 +90,6 @@ void testVector() {
 	Vector<double> vec1 = Vector(1.,1.,0.);
 	Vector<double> vec2 = Vector(1.,0.,0.);
 	std::cout << vec1.getAngle(vec2) << std::endl;
-}
-
-void firstRender() {
-	Vector<double> origine = Vector<double>(-3.,0.,1.5);
-	Vector<double> front = Vector<double>(1,0,-0.2);
-	Camera cam = Camera(origine,front,1280,720);
-	Environment env = Environment(&cam);
-
-	Pixel red = Pixel(255,0,0);
-	Pixel green = Pixel(0,255,0);
-	Pixel blue = Pixel(0,0,255);
-	Pixel yellow = Pixel(255,255,0);
-	Pixel cyan = Pixel(0,255,255);
-	Pixel magenta = Pixel(255,0,255);
-	Pixel black = Pixel(0,0,0);
-	Pixel white = Pixel(255,255,255);
-
-	Material light = Material(Pixel(255,255,255));
-	light.setEmissionStrengh(1.);
-
-	Material mirror = Material(Pixel(255,255,255));
-	mirror.setSpecularSmoothness(1.);
-
-	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.),mirror);
-
-	env.addSquare(Vector(0.,0.,0.),Vector(0.,0.,1.),Vector(1.,1.,1.),Vector(1.,1.,0.),yellow);
-	env.addSquare(Vector(0.,0.,0.),Vector(1.,-1.,0.),Vector(1.,-1.,1.),Vector(0.,0.,1.),cyan);
-	env.addSquare(Vector(0.,0.,1.),Vector(1.,-1.,1.),Vector(2.,0.,1.),Vector(1.,1.,1.),magenta);
-
-	env.addSquare(Vector(0.,-2.,0.),Vector(0.,-2.,2.),Vector(2.,-2.,2.),Vector(2.,-2.,0.),light); // left panel 
-	env.addSquare(Vector(0.,2.,0.),Vector(0.,2.,2.),Vector(2.,2.,2.),Vector(2.,2.,0.),light); // right panel
-
-	uint numberImage=2;
-	auto start = std::chrono::steady_clock::now();
-
-	for (uint i=0;i<numberImage;i++) {
-		if (i%1==0)
-			std::cout << "Rendering image N° " << i+1 << "/" << numberImage << std::endl;
-		cam.setPosition(cam.getPosition()-Vector<double>(i/100.0,0.,0.));
-		env.addBackground(Pixel(0,0,0));
-		//env.render();
-		env.renderCuda();
-		std::string path = "./render2/image";
-		std::string format = ".png";
-		path.append(std::to_string(i));
-		path.append(format);
-		cam.renderImage(path.c_str());
-
-		cam.rotate(0.01,ROT_FRONT);
-	}
-
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "Elapsed time per image (render + png writing): " << elapsed_seconds.count()/numberImage << "s\n";
-	std::cout << "Total time: " << elapsed_seconds.count() << "s\n";
 }
 
 void objRender() {

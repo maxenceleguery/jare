@@ -66,9 +66,25 @@ class Ray : public Line {
             return direction - normal*2*(direction*normal);
         }
 
+        __host__ __device__ void updateRay(Ray& ray, const Hit& hit, uint state) {
+            Material mat = hit.getMaterial();
+            Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(), state);
+            Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
+            Vector<double> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness()).normalize();
+            // New ray after bounce
+            ray.setPoint(hit.getPoint());
+            ray.setDirection(finalDirection);
+        }
+
+        __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<double>& incomingLight, Vector<double>& rayColor) {
+            Material mat = hit.getMaterial();
+            Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
+            incomingLight += emittedLight.productTermByTerm(rayColor);
+            rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;
+        }
+
         // Thanks to https://tavianator.com/2011/ray_box.html
         __host__ __device__ double distToBounds(const BoundingBox& bounds) {
-            
             const Vector<double> tMin = (bounds.getMin() - point).productTermByTerm(invDir);
             const Vector<double> tMax = (bounds.getMax() - point).productTermByTerm(invDir);
             const Vector<double> t1 = tMin.min(tMax);
@@ -79,100 +95,34 @@ class Ray : public Line {
             bool didHit = tFar >= tNear && tFar > 0;
             const double dst = didHit ? tNear > 0 ? tNear : 0 : INFINITY;
             return dst;
-            
-            /*
-            double tx1 = (bounds.getMin().getX() - point.getX())*invDir.getX();
-            double tx2 = (bounds.getMax().getX() - point.getX())*invDir.getX();
-
-            double tmin = Utils::min(tx1, tx2);
-            double tmax = Utils::max(tx1, tx2);
-
-            double ty1 = (bounds.getMin().getY() - point.getY())*invDir.getY();
-            double ty2 = (bounds.getMax().getY() - point.getY())*invDir.getY();
-
-            tmin = Utils::max(tmin, Utils::min(ty1, ty2));
-            tmax = Utils::min(tmax, Utils::max(ty1, ty2));
-
-            double tz1 = (bounds.getMin().getZ() - point.getZ())*invDir.getZ();
-            double tz2 = (bounds.getMax().getZ() - point.getZ())*invDir.getZ();
-
-            tmin = Utils::max(tmin, Utils::min(tz1, tz2));
-            tmax = Utils::min(tmax, Utils::max(tz1, tz2));
-            
-            bool didHit = tmax >= Utils::max(0.0, tmin) && tmin < INFINITY;
-            return didHit ? tmin : INFINITY;
-            */
         }
 
-        __host__ __device__ Hit rayTriangle(const Triangle& tri) {
-            /*
-            Hit hit;
-            Vector<double> intersectionPoint = tri.getIntersection((Line)(*this));
-            double distance = std::sqrt((intersectionPoint-point).normSquared());
-            if (intersectionPoint != Vector<double>() && distance<hit.getDistance()) {
-                if (hit.getFirstDistance() < 0)
-                    hit.setFirstDistance(distance);
-                hit.setDistance(distance);
-                hit.setHasHit(true);
-                hit.setMaterial(tri.getMaterial());
-                hit.setNormal(tri.getNormalVector());
-                hit.setPoint(intersectionPoint);
-            }
-            return hit;*/
-            
-            Vector<double> edgeAB = tri.getVertex(1) - tri.getVertex(0);
-            Vector<double> edgeAC = tri.getVertex(2) - tri.getVertex(0);
-            Vector<double> normalVector = edgeAB.crossProduct(edgeAC);
-            Vector<double> ao = point - tri.getVertex(0);
-            Vector<double> dao = ao.crossProduct(direction);
+        __host__ __device__ Hit rayTriangle(const Triangle& tri) {           
+            const Vector<double> edgeAB = tri.getVertex(1) - tri.getVertex(0);
+            const Vector<double> edgeAC = tri.getVertex(2) - tri.getVertex(0);
+            const Vector<double> normalVector = edgeAB.crossProduct(edgeAC);
+            const Vector<double> ao = point - tri.getVertex(0);
+            const Vector<double> dao = ao.crossProduct(direction);
 
-            double determinant = -direction*normalVector;
-            double invDet = 1.0 / determinant;
+            const double determinant = -direction*normalVector;
+            const double invDet = 1.0 / determinant;
 
             // Calculate dst to triangle & barycentric coordinates of intersection point
-            double dst = (ao*normalVector) * invDet;
-            double u = (edgeAC*dao) * invDet;
-            double v = -(edgeAB*dao) * invDet;
-            double w = 1.0 - u - v;
+            const double dst = (ao*normalVector) * invDet;
+            const double u = (edgeAC*dao) * invDet;
+            const double v = -(edgeAB*dao) * invDet;
+            const double w = 1.0 - u - v;
 
             // Initialize hit info
             Hit hit;
-            Vector<double> intersection = point + direction * dst;
-            //const bool edge = intersection == tri.getVertex(0) || intersection == tri.getVertex(1) || intersection == tri.getVertex(2);
-            hit.setHasHit(/*!edge &&*/ determinant >= 1E-8 && dst >= 1E-6 && u >= 1E-6 && v >= 1E-6 && w >= 1E-6);
+            const Vector<double> intersection = point + direction * dst;
+            hit.setHasHit(std::abs(determinant) >= 1E-8 && dst >= 1E-8 && u >= 1E-8 && v >= 1E-8 && w >= 1E-8);
             hit.setPoint(intersection);
             hit.setNormal(tri.getNormalVector());
             hit.setMaterial(tri.getMaterial());
             hit.setDistance(dst);
             return hit;
         }
-
-        __host__ Hit simpleTraceHost(const Meshes& meshes) {
-            Hit finalHit;
-            for (uint i=0;i<meshes.size();i++) {
-                for (uint j=0; j<meshes[i].size(); j++) {
-                    Hit hit = rayTriangle(meshes[i][j]);
-                    finalHit.update(hit);
-                }
-            }
-            return finalHit;
-        }
-
-        /*
-        __host__ __device__ void rayTriangleBVHRecursive(Node* node, Hit& hit) {
-            if (distToBounds(node->getBoundingBox()) < INFINITY) {
-                if (node->childA == nullptr && node->childB == nullptr) {
-                    Mesh mesh = node->getMesh();
-                    for (uint j=0; j<mesh.size(); j++) {
-                        rayTriangle(mesh[j], hit);
-                    }
-                } else {
-                    rayTriangleBVH(node->childA, hit);
-                    rayTriangleBVH(node->childB, hit);
-                }
-            }
-        }
-        */
 
         __host__ __device__ void rayTriangleBVH(const BVH& bvh, const uint nodeOffset, const uint triOffset, Hit& hit) {
             Hit finalHit;
@@ -214,6 +164,17 @@ class Ray : public Line {
             hit.update(finalHit);
         }
 
+        __host__ Hit simpleTraceHost(const Meshes& meshes) {
+            Hit finalHit;
+            for (uint i=0;i<meshes.size();i++) {
+                for (uint j=0; j<meshes[i].size(); j++) {
+                    Hit hit = rayTriangle(meshes[i][j]);
+                    finalHit.update(hit);
+                }
+            }
+            return finalHit;
+        }
+
         __device__ Hit simpleTraceDevice(Triangle* triangles, const uint nbTriangles) {
             Hit finalHit;
             for (uint i=0;i<nbTriangles;i++) {
@@ -223,7 +184,7 @@ class Ray : public Line {
             return finalHit;
         }
 
-        __host__ Pixel rayTrace1(Meshes& meshes, const Pixel& backgroundColor) {
+        __host__ Pixel simpleRayTraceHost(Meshes& meshes, const Pixel& backgroundColor) {
             Hit hit = simpleTraceHost(meshes);
             if (hit.getHasHit())
                 return hit.getMaterial().getColor();
@@ -231,18 +192,14 @@ class Ray : public Line {
                 return backgroundColor;
         }
 
-        __host__ Pixel rayTrace2(Meshes& meshes, uint state) {
+        __host__ Pixel rayTraceHost(Meshes& meshes, uint state) {
             Vector<double> incomingLight = Vector<double>();
             Vector<double> rayColor = Vector<double>(1.,1.,1.);
             for (uint bounce=0;bounce<maxBounce;bounce++) {
                 Hit hit = simpleTraceHost(meshes);
                 if (hit.getHasHit()) {
-                    point = hit.getPoint();
-                    direction = getDiffusionDirection(hit.getNormal(),state);
-                    Vector<double> emittedLight = hit.getMaterial().getColor().toVector() * hit.getMaterial().getEmissionStrengh();
-                    incomingLight += emittedLight.productTermByTerm(rayColor);
-                    rayColor = rayColor.productTermByTerm(hit.getMaterial().getColor().toVector())*(hit.getNormal()*direction);
-
+                    updateRay(*this, hit, state);
+                    updateLight(*this, hit, incomingLight, rayColor);
                 } else {
                     break;
                 }
@@ -250,20 +207,14 @@ class Ray : public Line {
             return Pixel(incomingLight);
         }
 
-        __device__ Vector<double> rayTrace3(const int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
+        __device__ Vector<double> rayTraceDevice(const int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
             Vector<double> incomingLight = Vector<double>();
             Vector<double> rayColor = Vector<double>(1.,1.,1.);
             for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
                 Hit hit = ray.simpleTraceDevice(triangles, nbTriangles);
                 if (hit.getHasHit()) {
-                    Material mat = hit.getMaterial();
-                    Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(),idx);
-                    Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
-                    Vector<double> finalDirection = (diffusionDir*(1-mat.getSpecularSmoothness()) + specularDir*mat.getSpecularSmoothness()).normalize();
-                    ray = Ray(hit.getPoint(),finalDirection);
-                    Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
-                    incomingLight += emittedLight.productTermByTerm(rayColor);
-                    rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;
+                    updateRay(ray, hit, idx);
+                    updateLight(ray, hit, incomingLight, rayColor);
                 } else {
                     break;
                 }
@@ -280,13 +231,8 @@ class Ray : public Line {
                     rayTriangleBVH(bvhs[i], 0, 0, hit);
                 }
                 if (hit.getHasHit()) {
-                    // New ray after bounce
-                    setPoint(hit.getPoint());
-                    setDirection(getDiffusionDirection(hit.getNormal(),state));
-
-                    Vector<double> emittedLight = hit.getMaterial().getColor().toVector() * hit.getMaterial().getEmissionStrengh();
-                    incomingLight += emittedLight.productTermByTerm(rayColor);
-                    rayColor = rayColor.productTermByTerm(hit.getMaterial().getColor().toVector())*(hit.getNormal()*direction);
+                    updateRay(*this, hit, state);
+                    updateLight(*this, hit, incomingLight, rayColor);
                 } else {
                     break;
                 }
@@ -303,17 +249,8 @@ class Ray : public Line {
                     ray.rayTriangleBVH(bvhs[i], 0, 0, hit);
                 }
                 if (hit.getHasHit()) {
-                    Material mat = hit.getMaterial();
-                    Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(),idx);
-                    Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
-                    Vector<double> finalDirection = (diffusionDir*(1-mat.getSpecularSmoothness()) + specularDir*mat.getSpecularSmoothness()).normalize();
-                    
-                    // New ray after bounce
-                    ray = Ray(hit.getPoint(), finalDirection);
-
-                    Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
-                    incomingLight += emittedLight.productTermByTerm(rayColor);
-                    rayColor = rayColor.productTermByTerm(mat.getColor().toVector())*(hit.getNormal()*ray.getDirection()) * 2;
+                    updateRay(ray, hit, idx);
+                    updateLight(ray, hit, incomingLight, rayColor);
                 } else {
                     break;
                 }

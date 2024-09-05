@@ -92,7 +92,6 @@ class Node {
 
         __host__ __device__ void addToBoundingBox(const Triangle& tri) {
             bounds.growToInclude(tri);
-            //incrementCount();
         }
 
         __host__ __device__ BoundingBox getBoundingBox() const {
@@ -119,10 +118,6 @@ class Node {
             triangleCount = count;
         }
 
-        __host__ __device__ void incrementCount() {
-            triangleCount++;
-        }
-
         __host__ __device__ uint getTriangleCount() const {
             return triangleCount;
         }
@@ -130,14 +125,14 @@ class Node {
 
 class BVH {
     private:
-        uint maxDepth = 10;
+        uint maxDepth = 5;
     
     public:
         Array<Node> allNodes;
         Mesh allTriangles;
     
         __host__ __device__ BVH() {}; 
-        __host__ __device__ BVH(const Mesh mesh, const uint maxDepth = 5) : maxDepth(maxDepth), allTriangles(mesh) {
+        __host__ __device__ BVH(const Mesh mesh) : allTriangles(mesh) {
             BoundingBox bounds;
             bounds.growToInclude(mesh);
 
@@ -145,13 +140,16 @@ class BVH {
             split(0, 0, allTriangles.size(), 0);
         };
 
+         __host__ __device__ BVH(const Mesh mesh, const uint _maxDepth) : BVH(mesh) {
+            maxDepth = _maxDepth;
+         };
+
         __host__ __device__ static double NodeCost(const Vector<double>& size, const int numTriangles) {
             double halfArea = size.getX() * size.getY() + size.getX() * size.getZ() + size.getY() * size.getZ();
             return halfArea * numTriangles;
         }
 
         __host__ __device__ void split(const uint parentIndex, const uint triGlobalStart, const uint triNum, const uint depth = 0) {
-
             const Vector<double> size = allNodes[parentIndex].getBoundingBox().getSize();
             const uint splitAxis = size.getX() > Utils::max(size.getY(), size.getZ()) ? 0 : size.getY() > size.getZ() ? 1 : 2;
             const double splitPos = allNodes[parentIndex].getBoundingBox().getCenter()[splitAxis];

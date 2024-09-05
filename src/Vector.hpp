@@ -238,4 +238,8 @@ class Vector {
         __host__ __device__ Vector<T> min(const Vector<T>& vec2) const {
             return Vector<T>(Utils::min(x, vec2.x), Utils::min(y, vec2.y), Utils::min(z, vec2.z));
         }
+
+        __host__ __device__ Vector<T> lerp(const Vector<T>& vec2, const double percentage) const {
+            return ((*this)*(1-percentage) + vec2*percentage);
+        }
 };
