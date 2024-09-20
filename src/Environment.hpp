@@ -272,7 +272,7 @@ class Environment {
 
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w)
-                    cam->setPixel(h*W+w, Pixel(colors[h*W + w].toVector().pow(1/cam->getGamma())));
+                    cam->setPixel(h*W+w, Pixel(colors[h*W + w].toVector().pow(1.f/cam->getGamma())));
             }
             colors.free();
             

@@ -34,33 +34,36 @@ class Ray : public Line {
             return maxBounce;
         }
 
-        __host__ __device__ Vector<float> getDiffusionDirection(const Vector<float>& normal, uint state) const {
+        __host__ __device__ Vector<float> getDiffusionDirection(Vector<float> normal, uint state) const {
             Vector<float> dir = random_gen.randomDirection(state);
+            //normal = -normal*sign(direction*normal);
             return dir*sign(dir*normal);
         }
 
-        __host__ __device__ Vector<float> getSpecularDirection(const Vector<float>& normal) const {
+        __host__ __device__ Vector<float> getSpecularDirection(Vector<float> normal) const {
+            //normal = normal*sign(direction*normal);
             return direction - normal*2*(direction*normal);
         }
 
         // TODO Background light
         __host__ __device__ Vector<float> envLight(Ray ray) {
             if (true) {
-                return Vector<float>();
+                // Global illumination
+                return Vector<float>(1.f, 1.f, 1.f);
             }
-            Vector<float> groundColor = Pixel(165,42,42).toVector();
-            Vector<float> skyColorHorizon = Pixel(157, 232, 229).toVector();
-            Vector<float> skyColorZenith = Pixel(87, 232, 229).toVector();
-            Vector<float> sunLightDirection = Vector<float>(0, 100, 100.);
-            float sunFocus = 0.001;
-            float sunIntensity = 0.001;
+            const Vector<float> groundColor = Pixel(200,200,200).toVector();
+            const Vector<float> skyColorHorizon = Pixel(157, 232, 229).toVector();
+            const Vector<float> skyColorZenith = Pixel(255, 255, 255).toVector();
+            const Vector<float> sunLightDirection = Vector<float>(0, 100.f, 100.f);
+            const float sunFocus = 0.01f;
+            const float sunIntensity = 0.1f;
 
 
-            float skyGradientT = std::pow(Utils::smoothStep(0.0, 0.4, ray.direction.getZ()), 0.35);
-            Vector<float> skyGradient = skyColorHorizon.lerp(skyColorZenith, skyGradientT);
-            float sun = std::pow(Utils::max(0.f, ray.direction*sunLightDirection), sunFocus) * sunIntensity;
+            const float skyGradientT = std::pow(Utils::smoothStep(0.0f, 0.8f, ray.direction.getZ()), 0.35f);
+            const Vector<float> skyGradient = skyColorHorizon.lerp(skyColorZenith, skyGradientT);
+            const float sun = std::pow(Utils::max(0.f, ray.direction*sunLightDirection), sunFocus) * sunIntensity;
 
-            float groundToSkyT = Utils::smoothStep(-0.01, 0.0, ray.direction.getZ());
+            const float groundToSkyT = Utils::smoothStep(-0.01f, 0.0f, ray.direction.getZ());
             return groundColor.lerp(skyGradient, groundToSkyT) + sun * (groundToSkyT >= 1);
         }
 
@@ -205,7 +208,7 @@ class Ray : public Line {
                     }
                     rayColor *= 1.0f / p;
                 } else {
-                    incomingLight += envLight(*this)*rayColor;
+                    incomingLight += envLight(*this).productTermByTerm(rayColor);
                     break;
                 }
             }
@@ -226,7 +229,7 @@ class Ray : public Line {
                     }
                     rayColor *= 1.0f / p;
                 } else {
-                    incomingLight += envLight(ray)*rayColor;
+                    incomingLight += envLight(ray).productTermByTerm(rayColor);
                     break;
                 }
             }
@@ -250,7 +253,7 @@ class Ray : public Line {
                     }
                     rayColor *= 1.0f / p;
                 } else {
-                    incomingLight += envLight(*this)*rayColor;
+                    incomingLight += envLight(*this).productTermByTerm(rayColor);
                     break;
                 }
             }
@@ -275,7 +278,7 @@ class Ray : public Line {
                     }
                     rayColor *= 1.0f / p;
                 } else {
-                    incomingLight += envLight(ray)*rayColor;
+                    incomingLight += envLight(ray).productTermByTerm(rayColor);
                     break;
                 }
             }

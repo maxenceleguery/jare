@@ -199,9 +199,6 @@ class Camera {
                     surface_pixels[3 * (h * surface->w + w) + 0] = pixels[h*width+w].getB();
                     surface_pixels[3 * (h * surface->w + w) + 1] = pixels[h*width+w].getG();
                     surface_pixels[3 * (h * surface->w + w) + 2] = pixels[h*width+w].getR();
-                    if ((int) pixels[h*width+w].getB() != 0) {
-                        std::cout << pixels[h*width+w].getB() << std::endl;
-                    }
                 }
             }
             SDL_DestroyTexture(texture);
