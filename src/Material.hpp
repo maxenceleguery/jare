@@ -4,20 +4,46 @@
 
 #include <cuda_runtime.h>
 
+enum MaterialType {
+    DEFAULT,
+    MIRROR,
+    LIGHT,
+};
+
 class Material {
     private:
         Pixel emissionColor;
         Pixel specularColor;
-        double diffusion = 0.;
-        double specularSmoothness = 0.;
-        double specularProb = 0.;
-        double emissionStrengh = 0.;
+        float diffusion;
+        float specularSmoothness;
+        float specularProb;
+        float emissionStrengh;
     public:
-        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), specularColor(Pixel(0,0,0)), diffusion(0), specularSmoothness(0) {};
-        __host__ __device__ Material(Pixel color0) : emissionColor(color0), specularColor(color0), diffusion(0), specularSmoothness(0) {};
-        __host__ __device__ Material(Pixel color0, double diffusion) : emissionColor(color0), diffusion(diffusion), specularSmoothness(0) {};
-        __host__ __device__ Material(Pixel color0, double diffusion, double specularSmoothness) : emissionColor(color0), diffusion(diffusion), specularSmoothness(specularSmoothness) {};
-        __host__ __device__ Material(Pixel color0, double diffusion, double specularSmoothness, double emissionStrengh) : emissionColor(color0), diffusion(diffusion), specularSmoothness(specularSmoothness), emissionStrengh(emissionStrengh) {};
+        __host__ __device__ Material() : emissionColor(Pixel(0,0,0)), specularColor(Pixel(0,0,0)), diffusion(0), specularSmoothness(0), specularProb(0), emissionStrengh(0) {};
+        __host__ __device__ Material(Pixel color0) : emissionColor(color0), specularColor(color0), diffusion(0), specularSmoothness(0), specularProb(0), emissionStrengh(0) {};
+        __host__ __device__ Material(Pixel color0, MaterialType mat_type) : emissionColor(color0), specularColor(color0) {
+            switch(mat_type) {
+                case MIRROR:
+                    diffusion = 0;
+                    specularSmoothness = 1;
+                    specularProb = 0;
+                    emissionStrengh = 0;
+                    break;
+
+                case LIGHT:
+                    diffusion = 0;
+                    specularSmoothness = 0;
+                    specularProb = 0;
+                    emissionStrengh = 1;
+                    break;
+
+                default:
+                    diffusion = 0;
+                    specularSmoothness = 0;
+                    specularProb = 0;
+                    emissionStrengh = 0;
+            }
+        };
         __host__ __device__ ~Material() {};
 
         __host__ __device__ Pixel getColor() const {
@@ -34,36 +60,36 @@ class Material {
             specularColor=color;
         }
 
-        __host__ __device__ double getDiffusion() const {
+        __host__ __device__ float getDiffusion() const {
             return diffusion;
         }
-        __host__ __device__ void setDiffusion(const double d) {
+        __host__ __device__ void setDiffusion(const float d) {
             diffusion=d;
         }
 
-        __host__ __device__ double getSpecularSmoothness() const {
+        __host__ __device__ float getSpecularSmoothness() const {
             return specularSmoothness;
         }
-        __host__ __device__ void setSpecularSmoothness(const double ss) {
+        __host__ __device__ void setSpecularSmoothness(const float ss) {
             specularSmoothness=ss;
         }
 
-        __host__ __device__ double getSpecularProb() const {
+        __host__ __device__ float getSpecularProb() const {
             return specularProb;
         }
-        __host__ __device__ void setSpecularProb(const double sp) {
+        __host__ __device__ void setSpecularProb(const float sp) {
             specularProb=sp;
         }
 
-        __host__ __device__ double getEmissionStrengh() const {
+        __host__ __device__ float getEmissionStrengh() const {
             return emissionStrengh;
         }
-        __host__ __device__ void setEmissionStrengh(const double s) {
+        __host__ __device__ void setEmissionStrengh(const float s) {
             emissionStrengh=s;
         }
 };
 
 namespace Materials {
-    const Material LIGHT = Material(Pixel(255,255,255), 0, 0, 1.);
-    const Material MIRROR = Material(Pixel(255,255,255), 0, 1, 0);
+    const Material LIGHT = Material(Pixel(255,255,255), MaterialType::LIGHT);
+    const Material MIRROR = Material(Pixel(255,255,255), MaterialType::MIRROR);
 }

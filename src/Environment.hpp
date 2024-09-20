@@ -32,7 +32,7 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 64;
+        uint samplesByThread = 8;
         uint threadsByRay = 1; //1
 
         Pixel backgroundColor = Pixel(0,0,0);
@@ -42,7 +42,7 @@ class Environment {
         Environment() {};
         Environment(Camera* cam0) : cam(cam0) {};
         ~Environment() {
-            meshes.free();
+            //meshes.free();
         };
 
         void setMode(const Mode m) {
@@ -276,15 +276,14 @@ class Environment {
             }
             colors.free();
             
-            Image img = Image(cam);
+            //Image img = Image(cam);
             //Image img2 = img.convolve(img.gaussianKernel,3);
-            
+            /*
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w) {
                     cam->setPixel(h*W+w, img.getPixel(w,h));
                 }
-            }
-            
+            }*/
         }
 
         void addBackground(const Pixel& color) {

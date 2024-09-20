@@ -9,37 +9,13 @@
 #include "Mesh.hpp"
 #include "BVH.hpp"
 #include "utils/MinMax.hpp"
-
-#include <cuda_runtime.h>
-#include <curand.h>
+#include "utils/Random.hpp"
 
 
 class Ray : public Line {
     private:
         uint maxBounce = 5;
-
-        __host__ __device__ double randomValue(uint state) const {
-            state = state*747796405 + 2891336453;
-            uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
-            result = (result >> 22) ^ result;
-            return result / 4294967295.0;
-        }
-
-        __host__ __device__ double randomValueNormalDistribution(const uint state) const { 
-            double theta = 2 * PI * randomValue(state);
-            double rho = std::sqrt(-2*std::log(randomValue(state*state)));
-            return rho*std::cos(theta);
-        }
-
-        __host__ __device__ Vector<double> randomDirection(const uint state) const {
-            double x;  double y;  double z;
-            do {
-                x = randomValueNormalDistribution(state);
-                y = randomValueNormalDistribution(state*42);
-                z = randomValueNormalDistribution(state*77);
-            } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
-            return Vector<double>(x,y,z).normalize();
-        }
+        RandomGenerator random_gen;
 
         __host__ __device__ int sign(const double number) const {
             if (number<0.)
@@ -59,7 +35,7 @@ class Ray : public Line {
         }
 
         __host__ __device__ Vector<double> getDiffusionDirection(const Vector<double>& normal, uint state) const {
-            Vector<double> dir = randomDirection(state);
+            Vector<double> dir = random_gen.randomDirection(state);
             return dir*sign(dir*normal);
         }
 
@@ -92,7 +68,7 @@ class Ray : public Line {
             Material mat = hit.getMaterial();
             Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(), state);
             Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
-            bool isSpecularBounce = mat.getSpecularProb() >= randomValue(state);
+            bool isSpecularBounce = mat.getSpecularProb() >= random_gen.randomValue(state);
             Vector<double> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness() * isSpecularBounce).normalize();
             // New ray after bounce
             ray.setPoint(hit.getPoint());
@@ -224,7 +200,7 @@ class Ray : public Line {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, incomingLight, rayColor);
                     const double p = rayColor.max();
-                    if (randomValue(state) >= p) {
+                    if (random_gen.randomValue(state) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;
@@ -245,7 +221,7 @@ class Ray : public Line {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, incomingLight, rayColor);
                     const double p = rayColor.max();
-                    if (randomValue(idx) >= p) {
+                    if (random_gen.randomValue(idx) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;
@@ -269,7 +245,7 @@ class Ray : public Line {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, incomingLight, rayColor);
                     const double p = rayColor.max();
-                    if (randomValue(state) >= p) {
+                    if (random_gen.randomValue(state) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;
@@ -294,7 +270,7 @@ class Ray : public Line {
                     updateLight(ray, hit, incomingLight, rayColor);
 
                     const double p = rayColor.max();
-                    if (randomValue(idx) >= p) {
+                    if (random_gen.randomValue(idx) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;

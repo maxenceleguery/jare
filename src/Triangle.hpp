@@ -10,15 +10,12 @@
 #include <vector>
 #include <cmath>
 
-#define PI 3.14159
-
 class Triangle {
 
     private:
         Vector<double> vertex0;
         Vector<double> vertex1;
         Vector<double> vertex2;
-        const uint nbVertices = 3;
         Material material;
 
         Vector<double> mini;

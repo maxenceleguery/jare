@@ -53,15 +53,15 @@ class Pixel {
             return b;
         }
 
-        __host__ __device__ void setR(uint8_t r0) {
+        __host__ __device__ void setR(const uint8_t r0) {
             r=r0;
         }
 
-        __host__ __device__ void setG(uint8_t g0) {
+        __host__ __device__ void setG(const uint8_t g0) {
             g=g0;
         } 
 
-        __host__ __device__ void setB(uint8_t b0) {
+        __host__ __device__ void setB(const uint8_t b0) {
             b=b0;
         } 
 

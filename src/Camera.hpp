@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <png.h>
+#include <thread>
 
 #include <SDL2/SDL.h>
 
@@ -27,7 +28,7 @@ class Camera {
         double capteurHeight;
         double fov = 0.01;
         double gamma = 2.0;
-        uint FPS = 60;
+        uint FPS = 30;
 
         std::vector<Pixel> pixels;
 
@@ -35,17 +36,26 @@ class Camera {
         SDL_Renderer* renderer;
         SDL_Texture* texture;
 
+        std::thread renderThread;
+        bool isOnBool = true;
+
     public:
         Camera(){};
         Camera(Vector<double> pos, uint width0, uint height0) : position(pos), vectFront(Vector<double>(0,1,0)), vectUp(Vector<double>(0,0,1)), vectRight(Vector<double>(1,0,0).crossProduct(Vector<double>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
+            showImage();
         };
         Camera(Vector<double> pos, Vector<double> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<double>(0,0,1)), vectRight(front.crossProduct(Vector<double>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
+            showImage();
         };
         ~Camera() {};
+
+        bool isOn() const {
+            return isOnBool;
+        }
 
         inline uint getWidth() const {
             return width;
@@ -189,6 +199,9 @@ class Camera {
                     surface_pixels[3 * (h * surface->w + w) + 0] = pixels[h*width+w].getB();
                     surface_pixels[3 * (h * surface->w + w) + 1] = pixels[h*width+w].getG();
                     surface_pixels[3 * (h * surface->w + w) + 2] = pixels[h*width+w].getR();
+                    if ((int) pixels[h*width+w].getB() != 0) {
+                        std::cout << pixels[h*width+w].getB() << std::endl;
+                    }
                 }
             }
             SDL_DestroyTexture(texture);
@@ -196,20 +209,47 @@ class Camera {
             SDL_FreeSurface(surface);
         }
 
-        void showImage() {
-            initWindow();
-
+        static void threadLoop(Camera* cam) {
+            std::cout << "Thread launched" << std::endl;
+            cam->initWindow();
             SDL_Event e;
             bool running = true;
             while(running) {
                 while (SDL_PollEvent(&e)) {
                     if (e.type == SDL_QUIT) running = false;
+                    if (e.key.keysym.sym == SDLK_UP) {
+                        cam->move(Vector<double>(0.1, 0., 0.));
+                    }
+                    if (e.key.keysym.sym == SDLK_DOWN) {
+                        cam->move(Vector<double>(-0.1, 0., 0.));
+                    }
+                    if (e.key.keysym.sym == SDLK_LEFT) {
+                        cam->move(Vector<double>(0., 0.1, 0.));
+                    }
+                    if (e.key.keysym.sym == SDLK_RIGHT) {
+                        cam->move(Vector<double>(0., -0.1, 0.));
+                    }
+                    if (e.key.keysym.sym == SDLK_SPACE) {
+                        cam->move(Vector<double>(0., 0., 0.1));
+                    }
+                    if (e.key.keysym.sym == SDLK_LSHIFT) {
+                        cam->move(Vector<double>(0., 0., -0.1));
+                    }
                 }
-                updateTexture();
-                SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-                SDL_RenderPresent(renderer);
-                SDL_Delay((Uint32)1./FPS);
+                cam->updateTexture();
+                SDL_RenderCopy(cam->renderer, cam->texture, nullptr, nullptr);
+                SDL_RenderPresent(cam->renderer);
+                SDL_Delay(1000*(Uint32)1./cam->FPS);
             }
-            closeWindow();
+            cam->isOnBool = false;
+            cam->closeWindow();
+        }
+
+        void showImage() {
+            renderThread = std::thread(threadLoop, this);
+        }
+
+        void stop() {
+            renderThread.join();
         }
 };

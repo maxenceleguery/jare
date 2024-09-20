@@ -67,8 +67,8 @@ class Array {
         __host__ void cpu() {
             if (data_gpu != nullptr) {
                 cudaErrorCheck(cudaMemcpy(data_cpu, data_gpu, data_size*sizeof(T), cudaMemcpyDeviceToHost));
-                cudaErrorCheck(cudaFree(data_gpu));
-                data_gpu = nullptr;
+                //cudaErrorCheck(cudaFree(data_gpu));
+                //data_gpu = nullptr;
             }
             data = data_cpu;
         }

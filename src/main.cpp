@@ -13,6 +13,7 @@
 #include <omp.h>
 #include <string>
 #include <chrono>
+#include <thread>
 
 void testCam() {
 	Vector<double> origine = Vector<double>(-2.,0.5,0.5);
@@ -117,20 +118,59 @@ void objRender() {
 
 	env.addBackground(Colors::BLACK);
 	env.setMode(Mode::BVH_RAYTRACING);
-	env.renderCudaBVH();
+	cam.showImage();
+
+	for (uint i = 0; i<10; i++) {
+		env.renderCudaBVH();
+		cam.move(Vector<double>(0., -0.5, 0.));
+	}
 	std::string path = "./render4/image";
 	std::string format = ".png";
 	path.append(std::to_string(0));
 	path.append(format);
 	cam.renderImage(path.c_str());
-	cam.showImage();
+	cam.stop();
+}
+
+void animObj() {
+	Vector<double> origine = Vector<double>(-3.,0.,1.5);
+	Vector<double> front = Vector<double>(1,0,-0.2);
+	Camera cam = Camera(origine,front,1280,720);
+	cam.move(-Vector<double>(5.0,0.,-1.5));
+
+	while (cam.isOn()) {
+		Environment env = Environment(&cam);
+		Material light = Materials::LIGHT;
+
+		env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.), Colors::WHITE);
+
+		light.setColor(Colors::RED);
+		env.addSquare(Vector(0.,-2.,0.)*2,Vector(0.,-2.,2.)*2,Vector(2.,-2.,2.)*2,Vector(2.,-2.,0.)*2, light); // left panel 
+		light.setColor(Colors::GREEN);
+		env.addSquare(Vector(0.,2.,0.)*2,Vector(2.,2.,0.)*2,Vector(2.,2.,2.)*2,Vector(0.,2.,2.)*2, light); // right panel
+
+		env.addObj("knight.obj",Vector<double>(0,0,0), 0.5, Colors::WHITE);
+
+		//env.addBackground(Colors::BLACK);
+		env.setMode(Mode::BVH_RAYTRACING);
+
+		env.renderCudaBVH();
+
+		/*
+		std::string path = "./render4/image";
+		std::string format = ".png";
+		path.append(std::to_string(0));
+		path.append(format);
+		cam.renderImage(path.c_str());*/
+	}
+	cam.stop();
 }
 
 void testSDL() {
 	Vector<double> origine = Vector<double>(-3.,0.,1.5);
 	Vector<double> front = Vector<double>(1,0,-0.2);
 	Camera cam = Camera(origine,front,1280,720);
-	cam.showImage();
+	//cam.showImage();
 }
 
 int main() {
@@ -144,7 +184,7 @@ int main() {
 	//firstRender();
 
 	auto start = std::chrono::steady_clock::now();
-	objRender();
+	animObj();
 	auto end = std::chrono::steady_clock::now();
 
 	std::chrono::duration<double> elapsed_seconds = end-start;
