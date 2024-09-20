@@ -16,15 +16,6 @@ class Ray : public Line {
     private:
         uint maxBounce = 5;
         RandomGenerator random_gen;
-
-        __host__ __device__ int sign(const float number) const {
-            if (number<0.)
-                return -1;
-            else if (number>0.)
-                return 1;
-            else
-                return 0;
-        }
     
     public:
         __host__ __device__ Ray() {};
@@ -32,17 +23,6 @@ class Ray : public Line {
 
         __host__ __device__ uint getMaxBounce() const {
             return maxBounce;
-        }
-
-        __host__ __device__ Vector<float> getDiffusionDirection(Vector<float> normal, uint state) const {
-            Vector<float> dir = random_gen.randomDirection(state);
-            //normal = -normal*sign(direction*normal);
-            return dir*sign(dir*normal);
-        }
-
-        __host__ __device__ Vector<float> getSpecularDirection(Vector<float> normal) const {
-            //normal = normal*sign(direction*normal);
-            return direction - normal*2*(direction*normal);
         }
 
         // TODO Background light
@@ -69,20 +49,15 @@ class Ray : public Line {
 
         __host__ __device__ void updateRay(Ray& ray, const Hit& hit, uint state) {
             Material mat = hit.getMaterial();
-            Vector<float> diffusionDir = ray.getDiffusionDirection(hit.getNormal(), state);
-            Vector<float> specularDir = ray.getSpecularDirection(hit.getNormal());
-            bool isSpecularBounce = mat.getSpecularProb() >= random_gen.randomValue(state);
-            Vector<float> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness() * isSpecularBounce).normalize();
+            Vector<float> finalDirection = mat.trace(ray.direction, hit.getNormal(), state);
             // New ray after bounce
             ray.setPoint(hit.getPoint());
             ray.setDirection(finalDirection);
         }
 
-        __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<float>& incomingLight, Vector<float>& rayColor) {
+        __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<float>* incomingLight, Vector<float>* rayColor) {
             Material mat = hit.getMaterial();
-            Vector<float> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
-            incomingLight += emittedLight.productTermByTerm(rayColor);
-            rayColor = rayColor.productTermByTerm(mat.getColor().toVector()*(hit.getNormal()*ray.getDirection()) * 2);
+            mat.shade(incomingLight, rayColor, ray.direction, hit.getNormal());
         }
 
         // Thanks to https://tavianator.com/2011/ray_box.html
@@ -201,7 +176,7 @@ class Ray : public Line {
                 Hit hit = simpleTraceHost(meshes);
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
-                    updateLight(*this, hit, incomingLight, rayColor);
+                    updateLight(*this, hit, &incomingLight, &rayColor);
                     const float p = rayColor.max();
                     if (random_gen.randomValue(state) >= p) {
                         break;
@@ -222,7 +197,7 @@ class Ray : public Line {
                 Hit hit = ray.simpleTraceDevice(triangles, nbTriangles);
                 if (hit.getHasHit()) {
                     updateRay(ray, hit, idx);
-                    updateLight(ray, hit, incomingLight, rayColor);
+                    updateLight(ray, hit, &incomingLight, &rayColor);
                     const float p = rayColor.max();
                     if (random_gen.randomValue(idx) >= p) {
                         break;
@@ -246,7 +221,7 @@ class Ray : public Line {
                 }
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
-                    updateLight(*this, hit, incomingLight, rayColor);
+                    updateLight(*this, hit, &incomingLight, &rayColor);
                     const float p = rayColor.max();
                     if (random_gen.randomValue(state) >= p) {
                         break;
@@ -270,8 +245,8 @@ class Ray : public Line {
                 }
                 if (hit.getHasHit()) {
                     updateRay(ray, hit, idx);
-                    updateLight(ray, hit, incomingLight, rayColor);
-
+                    updateLight(ray, hit, &incomingLight, &rayColor);
+                    
                     const float p = rayColor.max();
                     if (random_gen.randomValue(idx) >= p) {
                         break;
