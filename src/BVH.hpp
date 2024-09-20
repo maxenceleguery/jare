@@ -8,8 +8,8 @@
 
 class BoundingBox {
     private:
-        Vector<double> min = Vector<double>(1, 1, 1)*INFINITY;
-        Vector<double> max = Vector<double>(1, 1, 1)*-INFINITY;
+        Vector<float> min = Vector<float>(1, 1, 1)*INFINITY;
+        Vector<float> max = Vector<float>(1, 1, 1)*-INFINITY;
 
     public:
         __host__ __device__ BoundingBox() {};
@@ -27,12 +27,12 @@ class BoundingBox {
             return *this;
         }
 
-        __host__ __device__ void growToInclude(const Vector<double> vec) {
+        __host__ __device__ void growToInclude(const Vector<float> vec) {
             min = min.min(vec);
             max = max.max(vec);
         }
 
-        __host__ __device__ void growToInclude(const Vector<double> mini, const Vector<double> maxi) {
+        __host__ __device__ void growToInclude(const Vector<float> mini, const Vector<float> maxi) {
             min = min.min(mini);
             max = max.max(maxi);
         }
@@ -47,19 +47,19 @@ class BoundingBox {
             }
         }
 
-        __host__ __device__ Vector<double> getMin() const {
+        __host__ __device__ Vector<float> getMin() const {
             return min;
         }
 
-        __host__ __device__ Vector<double> getMax() const {
+        __host__ __device__ Vector<float> getMax() const {
             return max;
         }
 
-        __host__ __device__ Vector<double> getCenter() const {
+        __host__ __device__ Vector<float> getCenter() const {
             return (min + max) * 0.5;
         }
 
-        __host__ __device__ Vector<double> getSize() const {
+        __host__ __device__ Vector<float> getSize() const {
             return max - min;
         }
 };
@@ -149,12 +149,12 @@ class BVH {
             maxDepth = _maxDepth;
          };
 
-        __host__ static double NodeCost(const Vector<double>& size, const int numTriangles) {
-            double halfArea = size.getX() * size.getY() + size.getX() * size.getZ() + size.getY() * size.getZ();
+        __host__ static float NodeCost(const Vector<float>& size, const int numTriangles) {
+            float halfArea = size.getX() * size.getY() + size.getX() * size.getZ() + size.getY() * size.getZ();
             return halfArea * numTriangles;
         }
 
-        __host__ double evaluateSplit(const uint splitAxis, const double splitPos, const uint start, const uint count)
+        __host__ float evaluateSplit(const uint splitAxis, const float splitPos, const uint start, const uint count)
     {
         BoundingBox boundsLeft;
         BoundingBox boundsRight;
@@ -176,28 +176,28 @@ class BVH {
             }
         }
 
-        double costA = NodeCost(boundsLeft.getSize(), numOnLeft);
-        double costB = NodeCost(boundsRight.getSize(), numOnRight);
+        float costA = NodeCost(boundsLeft.getSize(), numOnLeft);
+        float costB = NodeCost(boundsRight.getSize(), numOnRight);
         return costA + costB;
     }
 
-        __host__ std::tuple<uint, double, double> chooseSplit(const Node& node, const uint start, const uint count) {
-            if (count <= 1) return std::make_tuple<uint, double, double>(0, 0, INFINITY);
+        __host__ std::tuple<uint, float, float> chooseSplit(const Node& node, const uint start, const uint count) {
+            if (count <= 1) return std::make_tuple<uint, float, float>(0, 0, INFINITY);
 
-            double bestSplitPos = 0;
+            float bestSplitPos = 0;
             uint bestSplitAxis = 0;
             const uint numSplitTests = 5;
 
-            double bestCost = INFINITY;
+            float bestCost = INFINITY;
 
             // Estimate best split pos
             for (uint axis = 0; axis < 3; axis++)
             {
                 for (uint i = 0; i < numSplitTests; i++)
                 {
-                    double splitT = (i + 1) / (numSplitTests + 1.);
-                    double splitPos = Utils::smoothStep(node.getBoundingBox().getMin()[axis], node.getBoundingBox().getMax()[axis], splitT);
-                    double cost = evaluateSplit(axis, splitPos, start, count);
+                    float splitT = (i + 1) / (numSplitTests + 1.);
+                    float splitPos = Utils::smoothStep(node.getBoundingBox().getMin()[axis], node.getBoundingBox().getMax()[axis], splitT);
+                    float cost = evaluateSplit(axis, splitPos, start, count);
                     if (cost < bestCost)
                     {
                         bestCost = cost;
@@ -211,13 +211,13 @@ class BVH {
         }
 
         __host__ void split(const uint parentIndex, const uint triGlobalStart, const uint triNum, const uint depth = 0) {
-            const Vector<double> size = allNodes[parentIndex].getBoundingBox().getSize();
-            const double parentCost = NodeCost(size, triNum);
+            const Vector<float> size = allNodes[parentIndex].getBoundingBox().getSize();
+            const float parentCost = NodeCost(size, triNum);
 
-            std::tuple<uint, double, double> splitting = chooseSplit(allNodes[parentIndex], triGlobalStart, triNum);
+            std::tuple<uint, float, float> splitting = chooseSplit(allNodes[parentIndex], triGlobalStart, triNum);
             const uint splitAxis = std::get<0>(splitting);
-            const double splitPos = std::get<1>(splitting);
-            const double cost = std::get<2>(splitting);
+            const float splitPos = std::get<1>(splitting);
+            const float cost = std::get<2>(splitting);
             
             if (depth < maxDepth && cost < parentCost) {
                 Node childA = Node();

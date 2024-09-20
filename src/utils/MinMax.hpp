@@ -14,7 +14,7 @@ namespace Utils {
     }
 
     template<typename T>
-    __host__ __device__ double smoothStep(const T min, const T max, const double t) {
+    __host__ __device__ float smoothStep(const T min, const T max, const float t) {
         return min*(1-t) + max*t;
     }
 };

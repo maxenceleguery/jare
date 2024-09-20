@@ -53,7 +53,7 @@ class Environment {
             meshes.push_back(Mesh(triangle));
         }
 
-        void addSquare(Vector<double> v1, Vector<double> v2, Vector<double> v3, Vector<double> v4, Material mat) {
+        void addSquare(Vector<float> v1, Vector<float> v2, Vector<float> v3, Vector<float> v4, Material mat) {
             Triangle triangle = Triangle(v1,mat);
             triangle.setvertex(1, v2);
             triangle.setvertex(2, v4);
@@ -67,27 +67,27 @@ class Environment {
             meshes.push_back(mesh);
         }
 
-        void addSquare(Vector<double> v1, Vector<double> v2, Vector<double> v3, Vector<double> v4, Pixel color) {
+        void addSquare(Vector<float> v1, Vector<float> v2, Vector<float> v3, Vector<float> v4, Pixel color) {
             addSquare(v1, v2, v3, v4, Material(color));
         }
 
-        void addObj(const std::string name, const Vector<double>& offset, const double scale, const Material mat) {
+        void addObj(const std::string name, const Vector<float>& offset, const float scale, const Material mat) {
             std::cout << "Loading " << name.c_str() << std::endl;
             Obj obj = Obj(name);
             //obj.print();
 
-            std::vector<Vector<double>> vertices = obj.getVertices();
+            std::vector<Vector<float>> vertices = obj.getVertices();
             std::vector<std::vector<Vector<int>>> indexes = obj.getIndexes();
 
-            double angle = 3.14159/2.0;
-            double ux = 1;
-            double uy = 0;
-            double uz = 0;
-            Matrix<double> P = Matrix<double>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
-            Matrix<double> I = Matrix<double>(1.,MATRIX_EYE);
-            Matrix<double> Q = Matrix<double>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
+            float angle = 3.14159/2.0;
+            float ux = 1;
+            float uy = 0;
+            float uz = 0;
+            Matrix<float> P = Matrix<float>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
+            Matrix<float> I = Matrix<float>(1.,MATRIX_EYE);
+            Matrix<float> Q = Matrix<float>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
 
-            Matrix<double> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
+            Matrix<float> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
 
             /*
             The OBJ format can provide multiple vertices for one triangle. We have to convert it in triangles as follow.
@@ -135,25 +135,25 @@ class Environment {
                     printProgress((h*W+(w+1))/(1.*H*W));
 
                     Pixel color;
-                    Vector<double> colorVec;
+                    Vector<float> colorVec;
                     
                     if (mode==SIMPLE_RENDER) {
-                        Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                        Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                         Ray ray = Ray(cam->getPosition(),direction);
 
                         color = ray.simpleRayTraceHost(meshes, backgroundColor);
                     }
 
                     else if (mode==RAYTRACING) {
-                        Vector<double> vectTmp;
+                        Vector<float> vectTmp;
                         samples = 4; // has to be a perfect square
                         int samplesSqrt=(int)std::sqrt(samples);
                         
-                        double dy=-(samplesSqrt-1)/2.;
+                        float dy=-(samplesSqrt-1)/2.;
                         do {
-                            double dx=-(samplesSqrt-1)/2.;
+                            float dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
 
                                 vectTmp = (ray.rayTraceHost(meshes, h*w)).toVector();
@@ -168,15 +168,15 @@ class Environment {
                     }
 
                     else if (mode==BVH_RAYTRACING) {
-                        Vector<double> vectTmp;
+                        Vector<float> vectTmp;
                         samples = 1; // has to be a perfect square
                         int samplesSqrt=(int)std::sqrt(samples);
                         
-                        double dy=-(samplesSqrt-1)/2.;
+                        float dy=-(samplesSqrt-1)/2.;
                         do {
-                            double dx=-(samplesSqrt-1)/2.;
+                            float dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
 
                                 vectTmp = (ray.rayTraceBVHHost(BVHs, h*w)).toVector();
@@ -223,7 +223,7 @@ class Environment {
             Array<Ray> rays = Array<Ray>(W * H);
             for(uint h = 0; h < H; ++h) {
                 for(uint w = 0; w < W; ++w) {
-                    Vector<double> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                    Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                     rays[h*W+w] = Ray(cam->getPosition(),direction);
                 }
             }
@@ -231,7 +231,7 @@ class Environment {
 
             auto end = std::chrono::steady_clock::now();
 
-            std::chrono::duration<double> elapsed_seconds = end-start;
+            std::chrono::duration<float> elapsed_seconds = end-start;
             std::cout << "Copy on device:\t\t" << elapsed_seconds.count() << "s\n";
 
             int blocksize = 256; // 1024 at most

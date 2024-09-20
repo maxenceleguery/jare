@@ -16,8 +16,8 @@
 #include <thread>
 
 void testCam() {
-	Vector<double> origine = Vector<double>(-2.,0.5,0.5);
-	Camera cam = Camera(origine,Vector<double>(1.,0.,0.),800,600);
+	Vector<float> origine = Vector<float>(-2.,0.5,0.5);
+	Camera cam = Camera(origine,Vector<float>(1.,0.,0.),800,600);
 	cam.getPixelCoordOnCapt(0,0).printCoord();
 	cam.getPixelCoordOnCapt(0,cam.getHeight()).printCoord();
 	cam.getPixelCoordOnCapt(cam.getWidth(),0).printCoord();
@@ -25,7 +25,7 @@ void testCam() {
 }
 
 void renderFadeBlackToWhite() {
-	Vector<double> origine = Vector<double>(0,0,0);
+	Vector<float> origine = Vector<float>(0,0,0);
 	Camera cam = Camera(origine,800,600);
 	Environment env = Environment(&cam);
 
@@ -41,10 +41,10 @@ void renderFadeBlackToWhite() {
 }
 
 void testTriangle() {
-	Vector<double> ex = Vector(0.,0.,0.);
-	Vector<double> ey = Vector(0.,0.,1.);
-	Vector<double> ez = Vector(1.,1.,1.);
-	Vector<double> vec = Vector(1.,1.,0.);
+	Vector<float> ex = Vector(0.,0.,0.);
+	Vector<float> ey = Vector(0.,0.,1.);
+	Vector<float> ez = Vector(1.,1.,1.);
+	Vector<float> vec = Vector(1.,1.,0.);
 	Triangle triangle = Triangle(ex,Pixel(255,0,0));
 	triangle.setvertex(1, ey);
 	triangle.setvertex(2, ez);
@@ -52,21 +52,21 @@ void testTriangle() {
 	std::cout << "Normal vector : ";
 	triangle.getNormalVector().printCoord();
 
-	Vector<double> vec2 = Vector(0.6,0.5,0.5);
+	Vector<float> vec2 = Vector(0.6,0.5,0.5);
 	if (triangle.isOnPlane(vec2))
 		std::cout << "Point on plane" << std::endl;
 	else
 		std::cout << "Point not on plane" << std::endl;
 
-	Vector<double> vec3 = Vector(0.5,0.5,10.);
+	Vector<float> vec3 = Vector(0.5,0.5,10.);
 
 }
 
 void testMatrix() {
-	Matrix<double> mat1 = Matrix(1.,2.,3.,1.,2.,3.,1.,2.,3.);
-	Matrix<double> mat2 = Matrix(1.,MATRIX_EYE);
-	Matrix<double> mat3 = Matrix(1.,2.,3.,0.,1.,4.,5.,6.,0.);
-	Vector<double> vec1 = Vector(1.,2.,1.);
+	Matrix<float> mat1 = Matrix(1.,2.,3.,1.,2.,3.,1.,2.,3.);
+	Matrix<float> mat2 = Matrix(1.,MATRIX_EYE);
+	Matrix<float> mat3 = Matrix(1.,2.,3.,0.,1.,4.,5.,6.,0.);
+	Vector<float> vec1 = Vector(1.,2.,1.);
 	(mat1+mat1).print();
 	(mat1-mat1).print();
 	(mat1*mat1).print();
@@ -78,28 +78,28 @@ void testMatrix() {
 }
 
 void testLine() {
-	Vector<double> vec1 = Vector(0.,1.,0.);
-	Vector<double> vec2 = Vector(1.,-1.,0.);
-	Vector<double> vec3 = Vector(0.,-2.,0.);
-	Vector<double> vec4 = Vector(1.,1.,0.);
+	Vector<float> vec1 = Vector(0.,1.,0.);
+	Vector<float> vec2 = Vector(1.,-1.,0.);
+	Vector<float> vec3 = Vector(0.,-2.,0.);
+	Vector<float> vec4 = Vector(1.,1.,0.);
 	Line l1 = Line(vec1,vec2);
 	Line l2 = Line(vec3,vec4);
 	std::cout << l1.IsIntersected(l2) << std::endl;
 }
 
 void testVector() {
-	Vector<double> vec1 = Vector(1.,1.,0.);
-	Vector<double> vec2 = Vector(1.,0.,0.);
+	Vector<float> vec1 = Vector(1.,1.,0.);
+	Vector<float> vec2 = Vector(1.,0.,0.);
 	std::cout << vec1.getAngle(vec2) << std::endl;
 }
 
 void objRender() {
-	Vector<double> origine = Vector<double>(-3.,0.,1.5);
-	Vector<double> front = Vector<double>(1,0,-0.2);
+	Vector<float> origine = Vector<float>(-3.,0.,1.5);
+	Vector<float> front = Vector<float>(1,0,-0.2);
 	Camera cam = Camera(origine,front,1280,720);
 	Environment env = Environment(&cam);
 
-	cam.move(-Vector<double>(5.0,0.,-1.5));
+	cam.move(-Vector<float>(5.0,0.,-1.5));
 
 	Material light = Materials::LIGHT;
 
@@ -114,7 +114,7 @@ void objRender() {
 	//env.addSquare(Vector(0.,0.,0.),Vector(2.,-2.,0.),Vector(2.,-2.,2.),Vector(0.,0.,2.), Colors::CYAN);
 	//env.addSquare(Vector(0.,0.,2.),Vector(2.,-2.,1.),Vector(2.,0.,2.),Vector(2.,2.,2.), Colors::MAGENTA);
 
-	env.addObj("knight.obj",Vector<double>(0,0,0),0.5, Colors::WHITE);
+	env.addObj("knight.obj",Vector<float>(0,0,0),0.5, Colors::WHITE);
 
 	env.addBackground(Colors::BLACK);
 	env.setMode(Mode::BVH_RAYTRACING);
@@ -122,7 +122,7 @@ void objRender() {
 
 	for (uint i = 0; i<10; i++) {
 		env.renderCudaBVH();
-		cam.move(Vector<double>(0., -0.5, 0.));
+		cam.move(Vector<float>(0., -0.5, 0.));
 	}
 	std::string path = "./render4/image";
 	std::string format = ".png";
@@ -133,10 +133,10 @@ void objRender() {
 }
 
 void animObj() {
-	Vector<double> origine = Vector<double>(-3.,0.,1.5);
-	Vector<double> front = Vector<double>(1,0,-0.2);
+	Vector<float> origine = Vector<float>(-3.,0.,1.5);
+	Vector<float> front = Vector<float>(1,0,-0.2);
 	Camera cam = Camera(origine,front,1280,720);
-	cam.move(-Vector<double>(5.0,0.,-1.5));
+	cam.move(-Vector<float>(5.0,0.,-1.5));
 
 	while (cam.isOn()) {
 		Environment env = Environment(&cam);
@@ -149,7 +149,7 @@ void animObj() {
 		light.setColor(Colors::GREEN);
 		env.addSquare(Vector(0.,2.,0.)*2,Vector(2.,2.,0.)*2,Vector(2.,2.,2.)*2,Vector(0.,2.,2.)*2, light); // right panel
 
-		env.addObj("knight.obj",Vector<double>(0,0,0), 0.5, Colors::WHITE);
+		env.addObj("knight.obj",Vector<float>(0,0,0), 0.5, Colors::WHITE);
 
 		//env.addBackground(Colors::BLACK);
 		env.setMode(Mode::BVH_RAYTRACING);
@@ -167,8 +167,8 @@ void animObj() {
 }
 
 void testSDL() {
-	Vector<double> origine = Vector<double>(-3.,0.,1.5);
-	Vector<double> front = Vector<double>(1,0,-0.2);
+	Vector<float> origine = Vector<float>(-3.,0.,1.5);
+	Vector<float> front = Vector<float>(1,0,-0.2);
 	Camera cam = Camera(origine,front,1280,720);
 	//cam.showImage();
 }
@@ -187,7 +187,7 @@ int main() {
 	animObj();
 	auto end = std::chrono::steady_clock::now();
 
-	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::chrono::duration<float> elapsed_seconds = end-start;
 	std::cout << "Render time:\t\t" << elapsed_seconds.count() << "s\n";
 
 	return EXIT_SUCCESS; 

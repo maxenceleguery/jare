@@ -15,7 +15,7 @@ class Vector {
         T y;
         T z;
 
-        __host__ __device__ double fast_inverse_square_root(float number) const {
+        __host__ __device__ float fast_inverse_square_root(float number) const {
             uint32_t i;
             float x2, y0;
             const float threehalfs = 1.5F;
@@ -27,14 +27,14 @@ class Vector {
             memcpy(&y0, &i, 4); // y0=*(float*) &i;
             y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method
             y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method again
-            return (double)y0;
+            return (float)y0;
         }
         
     public:
         __host__ __device__ Vector() : x((T)0), y((T)0), z((T)0) {};
         __host__ __device__ Vector(T x0, T y0, T z0) : x(x0), y(y0), z(z0) {};
-        //explicit Vector(Pixel pixel) : x(pixel.getR()), y(pixel.getG()), z(pixel.getB()) {};
-        //Vector(Vector<T>& vec) : x(vec.x), y(vec.y), z(vec.z) {};
+        template<typename U>
+        __host__ __device__ Vector(const Vector<U>& vec) : x((T)vec.getX()), y((T)vec.getY()), z((T)vec.getZ()) {};
         __host__ __device__ ~Vector(){};
 
         __host__ __device__ T getX() const {
@@ -87,7 +87,7 @@ class Vector {
         }
 
         __host__ __device__ Vector<T> normalize() {
-            double invNorm = fast_inverse_square_root(normSquared());
+            float invNorm = fast_inverse_square_root(normSquared());
             this->x*=invNorm;
             this->y*=invNorm;
             this->z*=invNorm;
@@ -96,7 +96,7 @@ class Vector {
 
         __host__ __device__ Vector<T> normalize(const Vector<T>& vec) {
             Vector<T> result = Vector(vec);
-            double invNorm = fast_inverse_square_root(normSquared());
+            float invNorm = fast_inverse_square_root(normSquared());
             result.x*=invNorm;
             result.y*=invNorm;
             result.z*=invNorm;
@@ -222,7 +222,7 @@ class Vector {
         }
 
         template <typename U>
-        __host__ __device__ double getAngle(const Vector<U>& vec2) {
+        __host__ __device__ float getAngle(const Vector<U>& vec2) {
             if (std::is_same<T,U>::value) {
                 if (std::abs(normalize(*this)*normalize(vec2))>1) {
                     return 0.;
@@ -247,7 +247,7 @@ class Vector {
             return Utils::min(x, Utils::min(y, z));
         }
 
-        __host__ __device__ Vector<T> lerp(const Vector<T>& vec2, const double percentage) const {
+        __host__ __device__ Vector<T> lerp(const Vector<T>& vec2, const float percentage) const {
             return ((*this)*(1-percentage) + vec2*percentage);
         }
 };

@@ -9,9 +9,9 @@
 class Obj {
     private:
         std::string nameObj;
-        std::vector<Vector<double>> v;
-        std::vector<Vector<double>> vt;
-        std::vector<Vector<double>> vn;
+        std::vector<Vector<float>> v;
+        std::vector<Vector<float>> vt;
+        std::vector<Vector<float>> vn;
         std::vector<std::vector<Vector<int>>> trianglesVecticesIndexes;
 
         std::vector<std::string> split(std::string ligne, char delim) {
@@ -41,21 +41,21 @@ class Obj {
                     nameObj = splitted[1];
                 }
                 else if (splitted[0] == "v") {
-                    double x = atof(splitted[1].c_str());
-                    double y = atof(splitted[2].c_str());
-                    double z = atof(splitted[3].c_str());
-                    v.push_back(Vector<double>(x, y, z));
+                    float x = atof(splitted[1].c_str());
+                    float y = atof(splitted[2].c_str());
+                    float z = atof(splitted[3].c_str());
+                    v.push_back(Vector<float>(x, y, z));
                 }
                 else if (splitted[0] == "vt") {
-                    double xt = atof(splitted[1].c_str());
-                    double yt = atof(splitted[2].c_str());
-                    vt.push_back(Vector<double>(xt, yt, 0.));
+                    float xt = atof(splitted[1].c_str());
+                    float yt = atof(splitted[2].c_str());
+                    vt.push_back(Vector<float>(xt, yt, 0.));
                 }
                 else if (splitted[0] == "vn") {
-                    double xn = atof(splitted[1].c_str());
-                    double yn = atof(splitted[2].c_str());
-                    double zn = atof(splitted[3].c_str());
-                    vn.push_back(Vector<double>(xn, yn, zn));
+                    float xn = atof(splitted[1].c_str());
+                    float yn = atof(splitted[2].c_str());
+                    float zn = atof(splitted[3].c_str());
+                    vn.push_back(Vector<float>(xn, yn, zn));
                 }
                 else if (splitted[0] == "f") {
                     splitted = split(rtrim(ligne), ' ');
@@ -74,27 +74,27 @@ class Obj {
         uint nbTriangles = 0;
         uint failedTriangles = 0;
 
-        void addVertices(Vector<double> vertex) {
+        void addVertices(Vector<float> vertex) {
             v.push_back(vertex);
         }
 
-        void addTextureVertices(Vector<double> vertex) {
+        void addTextureVertices(Vector<float> vertex) {
             vt.push_back(vertex);
         }
 
-        void addNormalVertices(Vector<double> vertex) {
+        void addNormalVertices(Vector<float> vertex) {
             vn.push_back(vertex);
         }
 
-        std::vector<Vector<double>> getVertices() {
+        std::vector<Vector<float>> getVertices() {
             return v;
         }
 
-        std::vector<Vector<double>> getTextureVertices() {
+        std::vector<Vector<float>> getTextureVertices() {
             return vt;
         }
 
-        std::vector<Vector<double>> getNormalVertices() {
+        std::vector<Vector<float>> getNormalVertices() {
             return vn;
         }
 

@@ -8,11 +8,11 @@
 class Hit {
     private:
         Material mat = Material();
-        Vector<double> point = Vector<double>();
-        Vector<double> normal = Vector<double>();
-        double distance = INFINITY;
-        double distanceTraveled = 0.;
-        double firstDistance = -1.;
+        Vector<float> point = Vector<float>();
+        Vector<float> normal = Vector<float>();
+        float distance = INFINITY;
+        float distanceTraveled = 0.;
+        float firstDistance = -1.;
         bool hasHit = false;
         
     public:
@@ -36,23 +36,23 @@ class Hit {
             return mat;
         }
         
-        __host__ __device__ Vector<double> getPoint() const {
+        __host__ __device__ Vector<float> getPoint() const {
             return point;
         }
         
-        __host__ __device__ Vector<double> getNormal() const {
+        __host__ __device__ Vector<float> getNormal() const {
             return normal;
         }
         
-        __host__ __device__ double getDistance() const {
+        __host__ __device__ float getDistance() const {
             return distance;
         }
         
-        __host__ __device__ double getFirstDistance() const {
+        __host__ __device__ float getFirstDistance() const {
             return firstDistance;
         }
 
-        __host__ __device__ double getDistanceTraveled() const {
+        __host__ __device__ float getDistanceTraveled() const {
             return distanceTraveled;
         }
         
@@ -65,20 +65,20 @@ class Hit {
             mat = m;
         }
         
-        __host__ __device__ void setPoint(const Vector<double>& p) {
+        __host__ __device__ void setPoint(const Vector<float>& p) {
             point = p;
         }
         
-        __host__ __device__ void setNormal(const Vector<double>& n) {
+        __host__ __device__ void setNormal(const Vector<float>& n) {
             normal = n;
         }
         
-        __host__ __device__ void setDistance(const double& d) {
+        __host__ __device__ void setDistance(const float& d) {
             distance = d;
             distanceTraveled += d;
         }
 
-        __host__ __device__ void setFirstDistance(const double& d) {
+        __host__ __device__ void setFirstDistance(const float& d) {
             firstDistance = d;
         }
         

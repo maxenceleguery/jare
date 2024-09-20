@@ -17,7 +17,7 @@ class Ray : public Line {
         uint maxBounce = 5;
         RandomGenerator random_gen;
 
-        __host__ __device__ int sign(const double number) const {
+        __host__ __device__ int sign(const float number) const {
             if (number<0.)
                 return -1;
             else if (number>0.)
@@ -28,93 +28,93 @@ class Ray : public Line {
     
     public:
         __host__ __device__ Ray() {};
-        __host__ __device__ Ray(Vector<double> point0, Vector<double> direction0) : Line(point0, direction0) {};
+        __host__ __device__ Ray(Vector<float> point0, Vector<float> direction0) : Line(point0, direction0) {};
 
         __host__ __device__ uint getMaxBounce() const {
             return maxBounce;
         }
 
-        __host__ __device__ Vector<double> getDiffusionDirection(const Vector<double>& normal, uint state) const {
-            Vector<double> dir = random_gen.randomDirection(state);
+        __host__ __device__ Vector<float> getDiffusionDirection(const Vector<float>& normal, uint state) const {
+            Vector<float> dir = random_gen.randomDirection(state);
             return dir*sign(dir*normal);
         }
 
-        __host__ __device__ Vector<double> getSpecularDirection(const Vector<double>& normal) const {
+        __host__ __device__ Vector<float> getSpecularDirection(const Vector<float>& normal) const {
             return direction - normal*2*(direction*normal);
         }
 
         // TODO Background light
-        __host__ __device__ Vector<double> envLight(Ray ray) {
+        __host__ __device__ Vector<float> envLight(Ray ray) {
             if (true) {
-                return Vector<double>();
+                return Vector<float>();
             }
-            Vector<double> groundColor = Pixel(165,42,42).toVector();
-            Vector<double> skyColorHorizon = Pixel(157, 232, 229).toVector();
-            Vector<double> skyColorZenith = Pixel(87, 232, 229).toVector();
-            Vector<double> sunLightDirection = Vector<double>(0, 100, 100.);
-            double sunFocus = 0.001;
-            double sunIntensity = 0.001;
+            Vector<float> groundColor = Pixel(165,42,42).toVector();
+            Vector<float> skyColorHorizon = Pixel(157, 232, 229).toVector();
+            Vector<float> skyColorZenith = Pixel(87, 232, 229).toVector();
+            Vector<float> sunLightDirection = Vector<float>(0, 100, 100.);
+            float sunFocus = 0.001;
+            float sunIntensity = 0.001;
 
 
-            double skyGradientT = std::pow(Utils::smoothStep(0.0, 0.4, ray.direction.getZ()), 0.35);
-            Vector<double> skyGradient = skyColorHorizon.lerp(skyColorZenith, skyGradientT);
-            double sun = std::pow(Utils::max(0., ray.direction*sunLightDirection), sunFocus) * sunIntensity;
+            float skyGradientT = std::pow(Utils::smoothStep(0.0, 0.4, ray.direction.getZ()), 0.35);
+            Vector<float> skyGradient = skyColorHorizon.lerp(skyColorZenith, skyGradientT);
+            float sun = std::pow(Utils::max(0.f, ray.direction*sunLightDirection), sunFocus) * sunIntensity;
 
-            double groundToSkyT = Utils::smoothStep(-0.01, 0.0, ray.direction.getZ());
+            float groundToSkyT = Utils::smoothStep(-0.01, 0.0, ray.direction.getZ());
             return groundColor.lerp(skyGradient, groundToSkyT) + sun * (groundToSkyT >= 1);
         }
 
         __host__ __device__ void updateRay(Ray& ray, const Hit& hit, uint state) {
             Material mat = hit.getMaterial();
-            Vector<double> diffusionDir = ray.getDiffusionDirection(hit.getNormal(), state);
-            Vector<double> specularDir = ray.getSpecularDirection(hit.getNormal());
+            Vector<float> diffusionDir = ray.getDiffusionDirection(hit.getNormal(), state);
+            Vector<float> specularDir = ray.getSpecularDirection(hit.getNormal());
             bool isSpecularBounce = mat.getSpecularProb() >= random_gen.randomValue(state);
-            Vector<double> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness() * isSpecularBounce).normalize();
+            Vector<float> finalDirection = diffusionDir.lerp(specularDir, mat.getSpecularSmoothness() * isSpecularBounce).normalize();
             // New ray after bounce
             ray.setPoint(hit.getPoint());
             ray.setDirection(finalDirection);
         }
 
-        __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<double>& incomingLight, Vector<double>& rayColor) {
+        __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<float>& incomingLight, Vector<float>& rayColor) {
             Material mat = hit.getMaterial();
-            Vector<double> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
+            Vector<float> emittedLight = mat.getColor().toVector() * mat.getEmissionStrengh();
             incomingLight += emittedLight.productTermByTerm(rayColor);
             rayColor = rayColor.productTermByTerm(mat.getColor().toVector()*(hit.getNormal()*ray.getDirection()) * 2);
         }
 
         // Thanks to https://tavianator.com/2011/ray_box.html
-        __host__ __device__ double distToBounds(const BoundingBox& bounds) {
-            const Vector<double> tMin = (bounds.getMin() - point).productTermByTerm(invDir);
-            const Vector<double> tMax = (bounds.getMax() - point).productTermByTerm(invDir);
-            const Vector<double> t1 = tMin.min(tMax);
-            const Vector<double> t2 = tMin.max(tMax);
-            const double tNear = Utils::max(Utils::max(t1.getX(), t1.getY()), t1.getZ());
-            const double tFar = Utils::min(Utils::min(t2.getX(), t2.getY()), t2.getZ());
+        __host__ __device__ float distToBounds(const BoundingBox& bounds) {
+            const Vector<float> tMin = (bounds.getMin() - point).productTermByTerm(invDir);
+            const Vector<float> tMax = (bounds.getMax() - point).productTermByTerm(invDir);
+            const Vector<float> t1 = tMin.min(tMax);
+            const Vector<float> t2 = tMin.max(tMax);
+            const float tNear = Utils::max(Utils::max(t1.getX(), t1.getY()), t1.getZ());
+            const float tFar = Utils::min(Utils::min(t2.getX(), t2.getY()), t2.getZ());
 
             bool didHit = tFar >= tNear && tFar > 0;
-            const double dst = didHit ? tNear > 0 ? tNear : 0 : INFINITY;
+            const float dst = didHit ? tNear > 0 ? tNear : 0 : INFINITY;
             return dst;
         }
 
         __host__ __device__ Hit rayTriangle(const Triangle& tri) {           
-            const Vector<double> edgeAB = tri.getVertex(1) - tri.getVertex(0);
-            const Vector<double> edgeAC = tri.getVertex(2) - tri.getVertex(0);
-            const Vector<double> normalVector = edgeAB.crossProduct(edgeAC);
-            const Vector<double> ao = point - tri.getVertex(0);
-            const Vector<double> dao = ao.crossProduct(direction);
+            const Vector<float> edgeAB = tri.getVertex(1) - tri.getVertex(0);
+            const Vector<float> edgeAC = tri.getVertex(2) - tri.getVertex(0);
+            const Vector<float> normalVector = edgeAB.crossProduct(edgeAC);
+            const Vector<float> ao = point - tri.getVertex(0);
+            const Vector<float> dao = ao.crossProduct(direction);
 
-            const double determinant = -direction*normalVector;
-            const double invDet = 1.0 / determinant;
+            const float determinant = -direction*normalVector;
+            const float invDet = 1.0 / determinant;
 
             // Calculate dst to triangle & barycentric coordinates of intersection point
-            const double dst = (ao*normalVector) * invDet;
-            const double u = (edgeAC*dao) * invDet;
-            const double v = -(edgeAB*dao) * invDet;
-            const double w = 1.0 - u - v;
+            const float dst = (ao*normalVector) * invDet;
+            const float u = (edgeAC*dao) * invDet;
+            const float v = -(edgeAB*dao) * invDet;
+            const float w = 1.0 - u - v;
 
             // Initialize hit info
             Hit hit;
-            const Vector<double> intersection = point + direction * dst;
+            const Vector<float> intersection = point + direction * dst;
             hit.setHasHit(std::abs(determinant) >= 1E-8 && dst >= 1E-8 && u >= 1E-8 && v >= 1E-8 && w >= 1E-8);
             hit.setPoint(intersection);
             hit.setNormal(tri.getNormalVector());
@@ -142,13 +142,13 @@ class Ray : public Line {
                     const uint childIndexA = nodeOffset + node.getChildIndex() + 0;
                     const uint childIndexB = nodeOffset + node.getChildIndex() + 1;
 
-                    const double dstA = distToBounds(bvh.allNodes[childIndexA].getBoundingBox());
-                    const double dstB = distToBounds(bvh.allNodes[childIndexB].getBoundingBox());
+                    const float dstA = distToBounds(bvh.allNodes[childIndexA].getBoundingBox());
+                    const float dstB = distToBounds(bvh.allNodes[childIndexB].getBoundingBox());
                     
                     // We want to look at closest child node first, so push it last
                     const bool isNearestA = dstA <= dstB;
-                    const double dstNear = isNearestA ? dstA : dstB;
-                    const double dstFar = isNearestA ? dstB : dstA;
+                    const float dstNear = isNearestA ? dstA : dstB;
+                    const float dstFar = isNearestA ? dstB : dstA;
                     const uint childIndexNear = isNearestA ? childIndexA : childIndexB;
                     const uint childIndexFar = isNearestA ? childIndexB : childIndexA;
 
@@ -192,14 +192,14 @@ class Ray : public Line {
         }
 
         __host__ Pixel rayTraceHost(Meshes& meshes, uint state) {
-            Vector<double> incomingLight = Vector<double>();
-            Vector<double> rayColor = Vector<double>(1.,1.,1.);
+            Vector<float> incomingLight = Vector<float>();
+            Vector<float> rayColor = Vector<float>(1.,1.,1.);
             for (uint bounce=0;bounce<maxBounce;bounce++) {
                 Hit hit = simpleTraceHost(meshes);
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, incomingLight, rayColor);
-                    const double p = rayColor.max();
+                    const float p = rayColor.max();
                     if (random_gen.randomValue(state) >= p) {
                         break;
                     }
@@ -212,15 +212,15 @@ class Ray : public Line {
             return Pixel(incomingLight);
         }
 
-        __device__ Vector<double> rayTraceDevice(const int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
-            Vector<double> incomingLight = Vector<double>();
-            Vector<double> rayColor = Vector<double>(1.,1.,1.);
+        __device__ Vector<float> rayTraceDevice(const int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
+            Vector<float> incomingLight = Vector<float>();
+            Vector<float> rayColor = Vector<float>(1.,1.,1.);
             for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
                 Hit hit = ray.simpleTraceDevice(triangles, nbTriangles);
                 if (hit.getHasHit()) {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, incomingLight, rayColor);
-                    const double p = rayColor.max();
+                    const float p = rayColor.max();
                     if (random_gen.randomValue(idx) >= p) {
                         break;
                     }
@@ -234,8 +234,8 @@ class Ray : public Line {
         }
 
         __host__ Pixel rayTraceBVHHost(const Array<BVH>& bvhs, uint state) {
-            Vector<double> incomingLight = Vector<double>();
-            Vector<double> rayColor = Vector<double>(1.,1.,1.);
+            Vector<float> incomingLight = Vector<float>();
+            Vector<float> rayColor = Vector<float>(1.,1.,1.);
             for (uint bounce=0;bounce<maxBounce;bounce++) {
                 Hit hit = Hit();
                 for (uint i = 0; i<bvhs.size(); i++) {
@@ -244,7 +244,7 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, incomingLight, rayColor);
-                    const double p = rayColor.max();
+                    const float p = rayColor.max();
                     if (random_gen.randomValue(state) >= p) {
                         break;
                     }
@@ -257,9 +257,9 @@ class Ray : public Line {
             return Pixel(incomingLight);
         }
 
-        __device__ Vector<double> rayTraceBVHDevice(const int idx, Ray ray, Array<BVH> bvhs) {
-            Vector<double> incomingLight = Vector<double>();
-            Vector<double> rayColor = Vector<double>(1.,1.,1.);
+        __device__ Vector<float> rayTraceBVHDevice(const int idx, Ray ray, Array<BVH> bvhs) {
+            Vector<float> incomingLight = Vector<float>();
+            Vector<float> rayColor = Vector<float>(1.,1.,1.);
             for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
                 Hit hit = Hit();
                 for (uint i = 0; i<bvhs.size(); i++) {
@@ -269,7 +269,7 @@ class Ray : public Line {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, incomingLight, rayColor);
 
-                    const double p = rayColor.max();
+                    const float p = rayColor.max();
                     if (random_gen.randomValue(idx) >= p) {
                         break;
                     }

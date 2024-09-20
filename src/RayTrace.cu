@@ -16,7 +16,7 @@ __global__ void rayTraceBVHCuda(Array<Ray> rays, Array<BVH> bvhs, Array<Pixel> c
     int idx2 = idx%(W*H);
 
     if (idx < threadsByRay*W*H) {
-        Vector<double> incomingLight;
+        Vector<float> incomingLight;
         for (uint i=0;i<samplesByThread;i++)
             incomingLight += rays[idx2].rayTraceBVHDevice(idx*(i+1)*state, rays[idx2], bvhs);
         incomingLight/=samplesByThread;
@@ -28,7 +28,7 @@ __global__ void threadsAggreg(Array<Pixel> colors, uint threadsByRay) {
     int idx = blockIdx.x * blockDim.x;
 
     if (threadIdx.x == 0) {
-        Vector<double> partialColor;
+        Vector<float> partialColor;
         for(uint i=0;i<threadsByRay;i++)
             partialColor+=colors[idx+i].toVector();
         partialColor/=threadsByRay;

@@ -13,13 +13,13 @@
 class Triangle {
 
     private:
-        Vector<double> vertex0;
-        Vector<double> vertex1;
-        Vector<double> vertex2;
+        Vector<float> vertex0;
+        Vector<float> vertex1;
+        Vector<float> vertex2;
         Material material;
 
-        Vector<double> mini;
-        Vector<double> maxi;
+        Vector<float> mini;
+        Vector<float> maxi;
 
     public:
         __host__ __device__ Triangle() {};
@@ -39,30 +39,30 @@ class Triangle {
             material = mat0;
         };
 
-        __host__ __device__ Triangle(Vector<double>& vec0, Material mat0) : Triangle() {
+        __host__ __device__ Triangle(Vector<float>& vec0, Material mat0) : Triangle() {
             vertex0 = vec0;
             material = mat0;
         };
 
-        __host__ __device__ Triangle(Vector<double>& vec0, Pixel color0) : Triangle(vec0, Material(color0)) {};
+        __host__ __device__ Triangle(Vector<float>& vec0, Pixel color0) : Triangle(vec0, Material(color0)) {};
 
-        __host__ __device__ Vector<double> min() const {
+        __host__ __device__ Vector<float> min() const {
             return vertex0.min(vertex1.min(vertex2));
         }
 
-        __host__ __device__ Vector<double> max() const {
+        __host__ __device__ Vector<float> max() const {
             return vertex0.max(vertex1.max(vertex2));
         }
 
-        __host__ __device__ Vector<double> getMin() const {
+        __host__ __device__ Vector<float> getMin() const {
             return mini;
         }
 
-        __host__ __device__ Vector<double> getMax() const {
+        __host__ __device__ Vector<float> getMax() const {
             return maxi;
         }
 
-        __host__ __device__ Vector<double> getVertex(const uint i) const {
+        __host__ __device__ Vector<float> getVertex(const uint i) const {
             if (i == 0)
                 return vertex0;
             else if (i == 1)
@@ -70,10 +70,10 @@ class Triangle {
             else if (i == 2)
                 return vertex2;
             else
-                return Vector<double>();
+                return Vector<float>();
         }
 
-        __host__ __device__ void setvertex(const uint i, const Vector<double>& vec) {
+        __host__ __device__ void setvertex(const uint i, const Vector<float>& vec) {
             if (i == 0)
                 vertex0 = vec;
             else if (i == 1)
@@ -93,20 +93,20 @@ class Triangle {
             material=mat;
         }
 
-        __host__ __device__ Vector<double> getNormalVector() const {
+        __host__ __device__ Vector<float> getNormalVector() const {
             return (vertex1-vertex0).crossProduct(vertex2-vertex0).normalize();
         }
 
-        __host__ __device__ Vector<double> getBarycenter() const {
+        __host__ __device__ Vector<float> getBarycenter() const {
             return (vertex0 + vertex1 + vertex2)/3;
         }
 
-        __host__ __device__ bool isOnPlane(const Vector<double>& vec) const {
-            Vector<double> normalVector = getNormalVector();
+        __host__ __device__ bool isOnPlane(const Vector<float>& vec) const {
+            Vector<float> normalVector = getNormalVector();
             return std::abs( (vec-vertex0).normalize()*normalVector ) < 1E-8;
         }
 
-        __host__ __device__ double triangleArea(const Vector<double>& v1, const Vector<double>& v2, const Vector<double>& v3) const {
+        __host__ __device__ float triangleArea(const Vector<float>& v1, const Vector<float>& v2, const Vector<float>& v3) const {
             return (v2-v1).crossProduct(v3-v1).norm()/2;
         }
 
@@ -119,7 +119,7 @@ class Triangle {
             vertex2.printCoord();
         }
 
-        __host__ __device__ void move(const Vector<double>& vec) {
+        __host__ __device__ void move(const Vector<float>& vec) {
             vertex0 += vec;
             vertex1 += vec;
             vertex2 += vec;

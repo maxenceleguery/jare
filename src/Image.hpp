@@ -10,7 +10,7 @@ class Image {
         uint height;       
 
     public:
-        double gaussianKernel[3][3] = {
+        float gaussianKernel[3][3] = {
                 {1. , 2. , 1.},
                 {2. , 4. , 2.},
                 {1. , 2. , 1.}
@@ -62,12 +62,12 @@ class Image {
         }
 
         // Kernel should be square with odd size
-        __host__ Image convolve(const double kernel[3][3], uint sizeKernel) {
+        __host__ Image convolve(const float kernel[3][3], uint sizeKernel) {
             Image img = Image(width,height);
             int offset = (sizeKernel-1)/2;
             for(uint w=0;w<width;w++) {
                 for(uint h=0;h<height;h++) {
-                    Vector<double> center;
+                    Vector<float> center;
                     for (int x=-offset;x<offset+1;x++) {
                         for (int y=-offset;y<offset+1;y++) {
                             //std::cout << w << " " << h << " " << x << " " << y << std::endl;

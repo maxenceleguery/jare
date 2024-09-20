@@ -16,18 +16,18 @@
 
 class Camera {
     private:
-        Vector<double> position;
+        Vector<float> position;
 
-        Vector<double> vectRight;
-        Vector<double> vectFront;
-        Vector<double> vectUp;
+        Vector<float> vectRight;
+        Vector<float> vectFront;
+        Vector<float> vectUp;
 
         uint width;
         uint height;
-        double capteurWidth;
-        double capteurHeight;
-        double fov = 0.01;
-        double gamma = 2.0;
+        float capteurWidth;
+        float capteurHeight;
+        float fov = 0.01;
+        float gamma = 2.0;
         uint FPS = 30;
 
         std::vector<Pixel> pixels;
@@ -41,12 +41,12 @@ class Camera {
 
     public:
         Camera(){};
-        Camera(Vector<double> pos, uint width0, uint height0) : position(pos), vectFront(Vector<double>(0,1,0)), vectUp(Vector<double>(0,0,1)), vectRight(Vector<double>(1,0,0).crossProduct(Vector<double>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
+        Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
             showImage();
         };
-        Camera(Vector<double> pos, Vector<double> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<double>(0,0,1)), vectRight(front.crossProduct(Vector<double>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
+        Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
             showImage();
@@ -65,17 +65,17 @@ class Camera {
             return height;
         }
 
-        double getGamma() const {
+        float getGamma() const {
             return gamma;
         }
 
-        void setGamma(double g) {
+        void setGamma(float g) {
             gamma = g;
         }
 
-        Vector<double> getPixelCoordOnCapt(double w, double h) const {
-            double W = (1.*w - width/2.)*(1.*capteurWidth/width);
-            double H = (-1.*h + height/2.)*(1.*capteurHeight/height);
+        Vector<float> getPixelCoordOnCapt(float w, float h) const {
+            float W = (1.*w - width/2.)*(1.*capteurWidth/width);
+            float H = (-1.*h + height/2.)*(1.*capteurHeight/height);
             return vectUp*H + vectRight*W;
         }
 
@@ -87,32 +87,32 @@ class Camera {
             pixels[index] = color;
         }
 
-        inline Vector<double> getPosition() const {
+        inline Vector<float> getPosition() const {
             return position;
         }
 
-        void setPosition(const Vector<double>& pos) {
+        void setPosition(const Vector<float>& pos) {
             position=pos;
         }
 
-        void move(const Vector<double>& offset) {
+        void move(const Vector<float>& offset) {
             position += offset;
         }
 
-        inline Vector<double> getVectFront() const {
+        inline Vector<float> getVectFront() const {
             return vectFront;
         }
 
-        void setVectFront(Vector<double>& ori) {
+        void setVectFront(Vector<float>& ori) {
             vectFront=ori;
         }
 
-        inline double getFov() const {
+        inline float getFov() const {
             return fov;
         }
 
-        void rotate(double angle, uint axis) {
-            Vector<double> direction;
+        void rotate(float angle, uint axis) {
+            Vector<float> direction;
             switch (axis) {
             case ROT_FRONT:
                 direction=vectFront.normalize();
@@ -128,14 +128,14 @@ class Camera {
                 std::cout << "Wrong axis provided" << std::endl;
                 return;
             }
-            double ux = direction.getX();
-            double uy = direction.getY();
-            double uz = direction.getZ();
-            Matrix<double> P = Matrix<double>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
-            Matrix<double> I = Matrix<double>(1.,MATRIX_EYE);
-            Matrix<double> Q = Matrix<double>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
+            float ux = direction.getX();
+            float uy = direction.getY();
+            float uz = direction.getZ();
+            Matrix<float> P = Matrix<float>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
+            Matrix<float> I = Matrix<float>(1.,MATRIX_EYE);
+            Matrix<float> Q = Matrix<float>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
 
-            Matrix<double> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
+            Matrix<float> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
             vectFront=(R*vectFront).normalize();
             vectRight=(R*vectRight).normalize();
             vectUp=(R*vectUp).normalize();
@@ -218,22 +218,22 @@ class Camera {
                 while (SDL_PollEvent(&e)) {
                     if (e.type == SDL_QUIT) running = false;
                     if (e.key.keysym.sym == SDLK_UP) {
-                        cam->move(Vector<double>(0.1, 0., 0.));
+                        cam->move(Vector<float>(0.1, 0., 0.));
                     }
                     if (e.key.keysym.sym == SDLK_DOWN) {
-                        cam->move(Vector<double>(-0.1, 0., 0.));
+                        cam->move(Vector<float>(-0.1, 0., 0.));
                     }
                     if (e.key.keysym.sym == SDLK_LEFT) {
-                        cam->move(Vector<double>(0., 0.1, 0.));
+                        cam->move(Vector<float>(0., 0.1, 0.));
                     }
                     if (e.key.keysym.sym == SDLK_RIGHT) {
-                        cam->move(Vector<double>(0., -0.1, 0.));
+                        cam->move(Vector<float>(0., -0.1, 0.));
                     }
                     if (e.key.keysym.sym == SDLK_SPACE) {
-                        cam->move(Vector<double>(0., 0., 0.1));
+                        cam->move(Vector<float>(0., 0., 0.1));
                     }
                     if (e.key.keysym.sym == SDLK_LSHIFT) {
-                        cam->move(Vector<double>(0., 0., -0.1));
+                        cam->move(Vector<float>(0., 0., -0.1));
                     }
                 }
                 cam->updateTexture();
