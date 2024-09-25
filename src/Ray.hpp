@@ -178,11 +178,11 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, &incomingLight, &rayColor);
-                    const float p = rayColor.max();
-                    if (random_gen.randomValue(state*bounce) >= p) {
-                        break;
-                    }
-                    rayColor *= 1.0f / p;
+                    //const float p = rayColor.max();
+                    //if (random_gen.randomValue(state) >= p) {
+                    //    break;
+                    //}
+                    //rayColor *= 1.0f / p;
                 } else {
                     incomingLight += envLight(*this).productTermByTerm(rayColor);
                     break;
@@ -191,19 +191,20 @@ class Ray : public Line {
             return Pixel(incomingLight);
         }
 
-        __device__ Vector<float> rayTraceDevice(const int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
+        __device__ Vector<float> rayTraceDevice(int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
             Vector<float> incomingLight = Vector<float>();
             Vector<float> rayColor = Vector<float>(1.,1.,1.);
+            uint uidx = (uint) idx;
             for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
                 Hit hit = ray.simpleTraceDevice(triangles, nbTriangles);
                 if (hit.getHasHit()) {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, &incomingLight, &rayColor);
-                    const float p = rayColor.max();
-                    if (random_gen.randomValue(idx*bounce) >= p) {
-                        break;
-                    }
-                    rayColor *= 1.0f / p;
+                    //const float p = rayColor.max();
+                    //if (random_gen.randomValue(uidx) >= p) {
+                    //    break;
+                    //}
+                    //rayColor *= 1.0f / p;
                 } else {
                     incomingLight += envLight(ray).productTermByTerm(rayColor);
                     break;
@@ -223,11 +224,11 @@ class Ray : public Line {
                 if (hit.getHasHit()) {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, &incomingLight, &rayColor);
-                    const float p = rayColor.max();
-                    if (random_gen.randomValue(state*bounce) >= p) {
-                        break;
-                    }
-                    rayColor *= 1.0f / p;
+                    //const float p = rayColor.max();
+                    //if (random_gen.randomValue(state) >= p) {
+                    //    break;
+                    //}
+                    //rayColor *= 1.0f / p;
                 } else {
                     incomingLight += envLight(*this).productTermByTerm(rayColor);
                     break;
