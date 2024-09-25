@@ -32,7 +32,7 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 8;
+        uint samplesByThread = 64;
         uint threadsByRay = 1; //1
 
         Pixel backgroundColor = Pixel(0,0,0);
@@ -238,7 +238,7 @@ class Environment {
             int nblocks = threadsByRay*H*W / blocksize;
 
             srand(time(NULL));
-            int state  = rand() % 50 + 1;
+            int state  = rand() % 500 + 1;
 
             start = std::chrono::steady_clock::now();
             rayTraceBVH(rays, BVHs, colors, nblocks, blocksize, W,H,samplesByThread,threadsByRay,state);

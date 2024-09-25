@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 
-#define PI 3.14159
+#define PI 3.141592653589f
 
 class RandomGenerator {
     private:
@@ -18,13 +18,13 @@ class RandomGenerator {
             state = state*747796405 + 2891336453*inner_state;
             inner_state = state;
             uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
-            result = (result >> 22) ^ result;
-            return result / 4294967295.0;
+            result = (result*inner_state >> 22) ^ result;
+            return result / 4294967295.f;
         }
 
         __host__ __device__ float randomValueNormalDistribution(const uint state) { 
             float theta = 2 * PI * randomValue(state);
-            float rho = std::sqrt(-2*std::log(randomValue(state*state)));
+            const float rho = std::sqrt(-2*std::log(randomValue(state*state)));
             return rho*std::cos(theta);
         }
 

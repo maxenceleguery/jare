@@ -34,7 +34,7 @@ class Line {
         __host__ __device__ void setDirection(const Vector<float>& d) {
             direction=d;
             direction.normalize();
-            invDir=d.invCoords();
+            invDir=direction.invCoords();
         } 
 
         __host__ __device__ bool IsIntersected(Line& line) {

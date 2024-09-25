@@ -27,7 +27,7 @@ class Vector {
             memcpy(&y0, &i, 4); // y0=*(float*) &i;
             y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method
             y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method again
-            return (float)y0;
+            return y0;
         }
         
     public:
@@ -83,24 +83,20 @@ class Vector {
         }
 
         __host__ __device__ T norm() const {
-            return std::sqrt(normSquared());
+            return std::sqrt(x*x + y*y + z*z);
         }
 
-        __host__ __device__ Vector<T> normalize() {
-            float invNorm = fast_inverse_square_root(normSquared());
-            this->x*=invNorm;
-            this->y*=invNorm;
-            this->z*=invNorm;
+        __host__ __device__ Vector normalize() {
+            const float invNorm = fast_inverse_square_root(normSquared());
+            x*=invNorm;
+            y*=invNorm;
+            z*=invNorm;
             return *this;
         }
 
-        __host__ __device__ Vector<T> normalize(const Vector<T>& vec) {
-            Vector<T> result = Vector(vec);
-            float invNorm = fast_inverse_square_root(normSquared());
-            result.x*=invNorm;
-            result.y*=invNorm;
-            result.z*=invNorm;
-            return result;
+        __host__ __device__ Vector normalize() const {
+            const float invNorm = fast_inverse_square_root(normSquared());
+            return Vector<T>(x*invNorm, y*invNorm, z*invNorm);
         }
 
         template<typename U>
@@ -224,10 +220,10 @@ class Vector {
         template <typename U>
         __host__ __device__ float getAngle(const Vector<U>& vec2) {
             if (std::is_same<T,U>::value) {
-                if (std::abs(normalize(*this)*normalize(vec2))>1) {
+                if (std::abs((*this).normalize()*vec2.normalize())>1) {
                     return 0.;
                 }
-                return std::acos( normalize(*this)*normalize(vec2) );
+                return std::acos( (*this).normalize()*vec2.normalize() );
             }
         }
 
@@ -249,5 +245,10 @@ class Vector {
 
         __host__ __device__ Vector<T> lerp(const Vector<T>& vec2, const float percentage) const {
             return ((*this)*(1-percentage) + vec2*percentage);
+        }
+
+        __host__ __device__ void clamp(const T min, const T max) {
+            *this = (*this).min(Vector<T>(max, max, max));
+            *this = (*this).max(Vector<T>(min, min, min));
         }
 };

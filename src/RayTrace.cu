@@ -18,7 +18,7 @@ __global__ void rayTraceBVHCuda(Array<Ray> rays, Array<BVH> bvhs, Array<Pixel> c
     if (idx < threadsByRay*W*H) {
         Vector<float> incomingLight;
         for (uint i=0;i<samplesByThread;i++)
-            incomingLight += rays[idx2].rayTraceBVHDevice(idx*(i+1)*state, rays[idx2], bvhs);
+            incomingLight += rays[idx2].rayTraceBVHDevice(idx*(i+1)*(i+2)*state, rays[idx2], bvhs);
         incomingLight/=samplesByThread;
         colors[idx] = Pixel(incomingLight);
     }

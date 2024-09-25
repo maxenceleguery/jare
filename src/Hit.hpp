@@ -70,7 +70,7 @@ class Hit {
         }
         
         __host__ __device__ void setNormal(const Vector<float>& n) {
-            normal = n;
+            normal = n.normalize();
         }
         
         __host__ __device__ void setDistance(const float& d) {

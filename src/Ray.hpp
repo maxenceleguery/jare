@@ -14,8 +14,9 @@
 
 class Ray : public Line {
     private:
-        uint maxBounce = 5;
+        uint maxBounce = 20;
         RandomGenerator random_gen;
+        RayInfo ray_info = {1.000293f, false};
     
     public:
         __host__ __device__ Ray() {};
@@ -49,7 +50,7 @@ class Ray : public Line {
 
         __host__ __device__ void updateRay(Ray& ray, const Hit& hit, uint state) {
             Material mat = hit.getMaterial();
-            Vector<float> finalDirection = mat.trace(ray.direction, hit.getNormal(), state);
+            Vector<float> finalDirection = mat.trace(ray.direction, hit.getNormal(), ray.ray_info, state);
             // New ray after bounce
             ray.setPoint(hit.getPoint());
             ray.setDirection(finalDirection);
@@ -178,7 +179,7 @@ class Ray : public Line {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, &incomingLight, &rayColor);
                     const float p = rayColor.max();
-                    if (random_gen.randomValue(state) >= p) {
+                    if (random_gen.randomValue(state*bounce) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;
@@ -199,7 +200,7 @@ class Ray : public Line {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, &incomingLight, &rayColor);
                     const float p = rayColor.max();
-                    if (random_gen.randomValue(idx) >= p) {
+                    if (random_gen.randomValue(idx*bounce) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;
@@ -223,7 +224,7 @@ class Ray : public Line {
                     updateRay(*this, hit, state);
                     updateLight(*this, hit, &incomingLight, &rayColor);
                     const float p = rayColor.max();
-                    if (random_gen.randomValue(state) >= p) {
+                    if (random_gen.randomValue(state*bounce) >= p) {
                         break;
                     }
                     rayColor *= 1.0f / p;
@@ -247,13 +248,14 @@ class Ray : public Line {
                     updateRay(ray, hit, idx);
                     updateLight(ray, hit, &incomingLight, &rayColor);
                     
-                    const float p = rayColor.max();
-                    if (random_gen.randomValue(idx) >= p) {
-                        break;
-                    }
-                    rayColor *= 1.0f / p;
+                    //const float p = rayColor.max();
+                    //if (random_gen.randomValue(idx*bounce) >= p) {
+                        //break;
+                    //}
+                    //rayColor *= 1.0f / p;
                 } else {
-                    incomingLight += envLight(ray).productTermByTerm(rayColor);
+                    //incomingLight += envLight(ray).productTermByTerm(rayColor);
+                    //incomingLight.clamp(0.f, 1.f);
                     break;
                 }
             }
