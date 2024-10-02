@@ -108,6 +108,7 @@ int main() {
 	static_assert(std::is_base_of<CudaReady, Array<double>>::value == true);
 	static_assert(std::is_base_of<CudaReady, BVH>::value == true);
 
+	/*
 	uint W = 1280;
 	uint H = 720;
 	uint w = 1000;
@@ -115,6 +116,7 @@ int main() {
 	uint idx = h * W + w;
 	std::cout << h << " == " << idx/W << std::endl;
 	std::cout << w << " == " << idx%W << std::endl;
+	*/
 
 	auto start = std::chrono::steady_clock::now();
 	animObj();

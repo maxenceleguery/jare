@@ -225,7 +225,7 @@ class Environment {
             );
 
             srand(ms.count());
-            int state  = rand() % 50000 + 1;
+            int state  = rand();
 
             RayTraceShader shader = RayTraceShader({BVHs, *cam, samplesByThread});
             compute_shader(shader, state);

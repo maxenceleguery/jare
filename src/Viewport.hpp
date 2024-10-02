@@ -66,7 +66,7 @@ class Viewport {
         }
 
         void updateFPSDisplay() {
-            SDL_Color White = {255, 255, 255};
+            SDL_Color White = {255, 255, 255, 255};
             std::string message = std::to_string(cam->getCurrentFPS()).substr(0, 4) + " FPS";
             SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, message.c_str(), White); 
 

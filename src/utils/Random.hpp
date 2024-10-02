@@ -10,14 +10,29 @@
 
 class RandomGenerator {
     private:
-        uint inner_state = 1;
+        unsigned long inner_state = 0;
     public:
          __host__ __device__ RandomGenerator() {};
          __host__ __device__ ~RandomGenerator() {};
 
         __host__ __device__ float randomValue(uint& state) {
+            if (inner_state == 0) inner_state = state + 1;
+
+            /*
+            inner_state ^= (inner_state << 13);
+            inner_state ^= (inner_state >> 17);
+            inner_state ^= (inner_state << 5);
+            return static_cast<float>(state) / static_cast<float>(UINT32_MAX);
+            */
+
+            const unsigned long a = 1664525; // multiplier
+            const unsigned long c = 1013904223; // increment
+            const unsigned long m = 4294967296; // 2^32
+            inner_state = (a * inner_state + c) % m;
+            return static_cast<float>(inner_state) / (m - 1);
+
             state = state*747796405 + 2891336453*inner_state;
-            //inner_state = state;
+            inner_state = state;
             uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
             result = (result >> 22) ^ result;
             return result / 4294967295.f;

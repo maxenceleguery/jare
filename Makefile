@@ -8,7 +8,7 @@ CXX = g++
 CXXCUDA = nvcc
 
 # define any compile-time flags
-CXXFLAGS	:= -std=c++20 -Wall -Wextra -g
+CXXFLAGS	:= -O3 -std=c++20 -Wall -Wextra -g
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
@@ -84,7 +84,7 @@ $(MAIN): $(OBJECTSCUDA) $(OBJECTS)
 # the rule(a .c file) and $@: the name of the target of the rule (a .o file) 
 # (see the gnu make manual section about automatic variables)
 .cpp.o:
-	$(CXX) -O3 $(CXXFLAGS) $(INCLUDES) -c $< -o $@ $(LFLAGS)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ $(LFLAGS)
 
 %.o: %.cu
 	$(CXXCUDA) -c $< -o $@

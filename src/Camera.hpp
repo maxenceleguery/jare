@@ -89,6 +89,7 @@ class Camera : public CudaReady {
 
         __host__ void setCurrentFPS(const float fps) {
             current_fps = fps;
+            num_images_rendered++;
         }
 
         __host__ __device__ Vector<float> getPixelCoordOnCapt(const float w, const float h) const {
@@ -110,12 +111,10 @@ class Camera : public CudaReady {
         }
 
         __host__ __device__ void updatePixel(const uint index, const Pixel& color) {
-            if (index == 0) num_images_rendered++;
-            if ((pixels[index].toVector() - color.toVector()).normSquared() > 0.5) {
-                num_images_rendered = 1;
-            }
-            float weight = 1.f / (num_images_rendered);
-            pixels[index] = pixels[index]*(1-weight) + color*weight;
+            //if (index==0) printf("%u\n", num_images_rendered);
+            const float weight = 1.f / (num_images_rendered);
+            if (num_images_rendered < 50)
+                pixels[index] = pixels[index]*(1-weight) + color*weight;
         }
 
         __host__ __device__ Vector<float> getPosition() const {
@@ -128,6 +127,7 @@ class Camera : public CudaReady {
 
         __host__ __device__ void move(const Vector<float>& offset) {
             position += offset;
+            num_images_rendered = 1;
         }
 
         __host__ __device__ Vector<float> getVectFront() const {
