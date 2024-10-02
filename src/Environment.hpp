@@ -31,7 +31,7 @@ enum Mode {
 
 class Environment {
     private:
-        Camera cam;
+        Camera* cam;
         Meshes meshes;
         uint samples = 5;
 
@@ -43,7 +43,7 @@ class Environment {
 
     public:
         Environment() {};
-        Environment(Camera cam0) : cam(cam0) {};
+        Environment(Camera* cam0) : cam(cam0) {};
         ~Environment() {
             std::cout << "Env destructor" << std::endl;
             if (mode==BVH_RAYTRACING) {
@@ -134,8 +134,8 @@ class Environment {
         }        
 
         void render() {
-            const uint H = cam.getHeight();
-            const uint W = cam.getWidth();
+            const uint H = cam->getHeight();
+            const uint W = cam->getWidth();
 
             Array<BVH> BVHs = Array<BVH>();
             if (mode==BVH_RAYTRACING) {
@@ -156,8 +156,8 @@ class Environment {
                     Vector<float> colorVec;
                     
                     if (mode==SIMPLE_RENDER) {
-                        Vector<float> direction = (cam.getVectFront()*cam.getFov()+cam.getPixelCoordOnCapt(w,h)).normalize();
-                        Ray ray = Ray(cam.getPosition(),direction);
+                        Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
+                        Ray ray = Ray(cam->getPosition(),direction);
 
                         color = ray.simpleRayTraceHost(meshes, backgroundColor);
                     }
@@ -171,8 +171,8 @@ class Environment {
                         do {
                             float dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<float> direction = (cam.getVectFront()*cam.getFov()+cam.getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
-                                Ray ray = Ray(cam.getPosition(),direction);
+                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Ray ray = Ray(cam->getPosition(),direction);
 
                                 vectTmp = (ray.rayTraceHost(meshes, h*w)).toVector();
 
@@ -194,8 +194,8 @@ class Environment {
                         do {
                             float dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<float> direction = (cam.getVectFront()*cam.getFov()+cam.getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
-                                Ray ray = Ray(cam.getPosition(),direction);
+                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Ray ray = Ray(cam->getPosition(),direction);
 
                                 vectTmp = (ray.rayTraceBVHHost(BVHs, h*w)).toVector();
 
@@ -207,7 +207,7 @@ class Environment {
                         colorVec/=(samples/2);
                         color=Pixel(colorVec);
                     }
-                    cam.setPixel(h*W+w, color);
+                    cam->setPixel(h*W+w, color);
                 }
             }
             if (mode==BVH_RAYTRACING) {
@@ -219,35 +219,26 @@ class Environment {
         }
         
         void renderCudaBVH() {
-            uint H = cam.getHeight();
-            uint W = cam.getWidth();
-
             auto start = std::chrono::steady_clock::now();
-            auto end = std::chrono::steady_clock::now();
-            std::chrono::duration<float> elapsed_seconds;
 
             srand(time(NULL));
             int state  = rand() % 500 + 1;
 
-            start = std::chrono::steady_clock::now();
-
-            RayTraceShader shader = RayTraceShader(W, H);
-            shader.setParams({BVHs, cam, samplesByThread});
+            RayTraceShader shader = RayTraceShader({BVHs, *cam, samplesByThread});
             compute_shader(shader, state);
 
-            AggregShader shader2 = AggregShader(W, H);
-            shader2.setParams({cam});
+            AggregShader shader2 = AggregShader({*cam});
             //compute_shader(shader2, state);
 
-            end = std::chrono::steady_clock::now();
-            elapsed_seconds = end-start;
-            std::cout << "Raytracing time:\t" << elapsed_seconds.count() << "s\n";
+            auto end = std::chrono::steady_clock::now();
+            std::chrono::duration<float> elapsed_seconds = end-start;
+            std::cout << "FPS:\t" << 1./(elapsed_seconds.count()) << std::endl;
         }
 
         void addBackground(const Pixel& color) {
             backgroundColor = color;
-            for(uint h = 0; h < cam.getHeight(); ++h) 
-                for(uint w = 0; w < cam.getWidth(); ++w)
-                    cam.setPixel(h*cam.getWidth()+w, color);
+            for(uint h = 0; h < cam->getHeight(); ++h) 
+                for(uint w = 0; w < cam->getWidth(); ++w)
+                    cam->setPixel(h*cam->getWidth()+w, color);
         }
 };

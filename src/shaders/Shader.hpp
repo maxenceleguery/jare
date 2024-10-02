@@ -12,7 +12,7 @@ class Shader {
         unsigned int W, H, blocksize, nblocks, nthreads;
 
     public:
-        __host__ __device__ Shader(unsigned int W, unsigned int H) : W(W), H(H) {
+        __host__ __device__ Shader(const unsigned int W, const unsigned int H) : W(W), H(H) {
             blocksize = 256; // 1024 at most
             nthreads = 1;
             nblocks = nthreads*H*W / blocksize;

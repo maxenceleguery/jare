@@ -1,6 +1,6 @@
 #include "Aggreg.hpp"
 
-__device__ void AggregShader::shader(int idx, int state) {
+__device__ void AggregShader::shader(const int idx, int state) {
     Vector<float> partialColor;
     for(uint i=0; i<nthreads; i++)
         partialColor += params.cam.getPixel(idx+i*H*W).toVector();

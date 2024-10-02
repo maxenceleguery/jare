@@ -18,11 +18,10 @@ class RayTraceShader : public Shader {
     private:
         RayTraceShaderParams params;
     public:
-        __host__ __device__ RayTraceShader(unsigned int W, unsigned int H) : Shader(W, H) {};
-        __host__ __device__ void setParams(const RayTraceShaderParams _params) {
+        __host__ __device__ RayTraceShader(const RayTraceShaderParams _params) : Shader(_params.cam.getWidth(), _params.cam.getHeight()) {
             params = _params;
-        }
-        __device__ void shader(int idx, int state);
+        };
+        __device__ void shader(const int idx, int state);
         __host__ __device__ uint getMaxIndex() const {
             return H*W*nthreads;
         }

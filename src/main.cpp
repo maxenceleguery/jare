@@ -20,7 +20,7 @@ void objRender() {
 	Vector<float> front = Vector<float>(1,0,-0.2);
 	Camera cam = Camera(origine,front,1280,720);
 	Viewport viewport = Viewport(&cam);
-	Environment env = Environment(cam);
+	Environment env = Environment(&cam);
 
 	cam.move(-Vector<float>(5.0,0.,-1.5));
 
@@ -63,8 +63,8 @@ void animObj() {
 	cam.move(-Vector<float>(5.0,0.,-1.5));
 	cam.cuda();
 
-	Environment env = Environment(cam);
-	
+	Environment env = Environment(&cam);
+
 	Material light = Materials::LIGHT;
 
 	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.), Colors::WHITE);
@@ -106,6 +106,14 @@ int main() {
 	static_assert(std::is_base_of<CudaReady, Pixel>::value == false);
 	static_assert(std::is_base_of<CudaReady, Array<double>>::value == true);
 	static_assert(std::is_base_of<CudaReady, BVH>::value == true);
+
+	uint W = 1280;
+	uint H = 720;
+	uint w = 1000;
+	uint h = 500;
+	uint idx = h * W + w;
+	std::cout << h << " == " << idx/W << std::endl;
+	std::cout << w << " == " << idx%W << std::endl;
 
 	auto start = std::chrono::steady_clock::now();
 	animObj();

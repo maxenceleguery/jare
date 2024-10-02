@@ -31,17 +31,20 @@ class Camera : public CudaReady {
         float fov = 0.01;
         float gamma = 2.0;
 
-        Array<Pixel> pixels;
+        
 
     public:
+        Array<Pixel> pixels;
         uint threadsByRay = 1;
 
         __host__ Camera() {};
-        __host__ Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0*threadsByRay) {
+        __host__ Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0) {
+            pixels =  Array<Pixel>(width0*height0*threadsByRay);
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
         __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0*threadsByRay) {
+            pixels =  Array<Pixel>(width0*height0*threadsByRay);
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };

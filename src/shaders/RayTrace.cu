@@ -1,10 +1,10 @@
 #include "RayTrace.hpp"
 
-__device__ void RayTraceShader::shader(int idx, int state) {
+__device__ void RayTraceShader::shader(const int idx, int state) {
     Vector<float> incomingLight;
     uint idx2 = idx%(W*H);
-    uint h = idx2%W;
-    uint w = idx2/W;
+    uint w = idx2%W;
+    uint h = idx2/W;
     for (int i=0;i<params.samplesByThread;i++) {
         Ray ray = params.cam.generate_ray(w, h);
         incomingLight += ray.rayTraceBVHDevice(idx*state+i, ray, params.bvhs);
