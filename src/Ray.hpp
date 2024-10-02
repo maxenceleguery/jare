@@ -4,7 +4,6 @@
 #include "Line.hpp"
 #include "Material.hpp"
 #include "Triangle.hpp"
-#include "Triangle.hpp"
 #include "Hit.hpp"
 #include "Mesh.hpp"
 #include "BVH.hpp"
@@ -194,7 +193,6 @@ class Ray : public Line {
         __device__ Vector<float> rayTraceDevice(int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
             Vector<float> incomingLight = Vector<float>();
             Vector<float> rayColor = Vector<float>(1.,1.,1.);
-            uint uidx = (uint) idx;
             for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
                 Hit hit = ray.simpleTraceDevice(triangles, nbTriangles);
                 if (hit.getHasHit()) {

@@ -72,6 +72,18 @@ class Pixel {
             return *this;
         }
 
+        __host__ __device__ Pixel operator+ (const Pixel& other) const {
+            return Pixel(r+other.r,g+other.g,b+other.b);
+        }
+
+        __host__ __device__ Pixel operator- (const Pixel& other) const {
+            return Pixel(r-other.r,g-other.g,b-other.b);
+        }
+
+        __host__ __device__ Pixel operator* (const float number) const {
+            return Pixel(r*number,g*number,b*number);
+        }
+
         __host__ __device__ Pixel operator/ (const float number) const {
             return Pixel(r/number,g/number,b/number);
         }

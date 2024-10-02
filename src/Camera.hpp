@@ -1,20 +1,22 @@
 #pragma once
+
 #include "Vector.hpp"
 #include "Pixel.hpp"
 #include "Matrix.hpp"
+#include "Ray.hpp"
+#include "utils/Array.hpp"
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <png.h>
-#include <thread>
 
-#include <SDL2/SDL.h>
+#include <cuda_runtime.h>
 
 #define ROT_RIGHT 2000
 #define ROT_FRONT 2001
 #define ROT_UP 2002
 
-class Camera {
+class Camera : public CudaReady {
     private:
         Vector<float> position;
 
@@ -28,90 +30,104 @@ class Camera {
         float capteurHeight;
         float fov = 0.01;
         float gamma = 2.0;
-        uint FPS = 30;
 
-        std::vector<Pixel> pixels;
-
-        SDL_Window* window;
-        SDL_Renderer* renderer;
-        SDL_Texture* texture;
-
-        std::thread renderThread;
-        bool isOnBool = true;
+        Array<Pixel> pixels;
 
     public:
-        Camera(){};
-        Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
-            capteurWidth = (0.005*width0)/(1.*height0);
-            capteurHeight = 0.005;
-            showImage();
-        };
-        Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0) {
-            capteurWidth = (0.005*width0)/(1.*height0);
-            capteurHeight = 0.005;
-            showImage();
-        };
-        ~Camera() {};
+        uint threadsByRay = 1;
 
-        bool isOn() const {
-            return isOnBool;
+        __host__ Camera() {};
+        __host__ Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0*threadsByRay) {
+            capteurWidth = (0.005*width0)/(1.*height0);
+            capteurHeight = 0.005;
+        };
+        __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0*threadsByRay) {
+            capteurWidth = (0.005*width0)/(1.*height0);
+            capteurHeight = 0.005;
+        };
+
+        __host__ void cuda() override {
+            pixels.cuda();
         }
 
-        inline uint getWidth() const {
+        __host__ void cpu() override {
+            pixels.cpu();
+        }
+
+        __host__ void sync_to_cpu() override {
+            pixels.sync_to_cpu();
+        }
+
+        __host__ void free() override {
+            pixels.free();
+        }
+
+        __host__ __device__ uint getWidth() const {
             return width;
         }
 
-        inline uint getHeight() const {
+        __host__ __device__ uint getHeight() const {
             return height;
         }
 
-        float getGamma() const {
+        __host__ __device__ float getGamma() const {
             return gamma;
         }
 
-        void setGamma(float g) {
+        __host__ __device__ void setGamma(float g) {
             gamma = g;
         }
 
-        Vector<float> getPixelCoordOnCapt(float w, float h) const {
-            float W = (1.*w - width/2.)*(1.*capteurWidth/width);
-            float H = (-1.*h + height/2.)*(1.*capteurHeight/height);
+        __host__ __device__ Vector<float> getPixelCoordOnCapt(const float w, const float h) const {
+            const float W = (1.*w - width/2.)*(1.*capteurWidth/width);
+            const float H = (-1.*h + height/2.)*(1.*capteurHeight/height);
             return vectUp*H + vectRight*W;
         }
 
-        inline Pixel getPixel(uint index) const {
+        __host__ Pixel getPixelCPU(const uint index) const {
+            return pixels.getValueFromCPU(index);
+        }
+
+        __host__ __device__ Pixel getPixel(const uint index) const {
             return pixels[index];
         }
 
-        void setPixel(uint index, const Pixel& color) {
+        __host__ __device__ void setPixel(const uint index, const Pixel& color) {
             pixels[index] = color;
         }
 
-        inline Vector<float> getPosition() const {
+        __host__ __device__ void updatePixel(const uint index, const Pixel& color) {
+            if ((pixels[index].toVector() - color.toVector()).normSquared() > 0.3)
+                pixels[index] = pixels[index]*(1-0.95) + color*0.95;
+            else
+                pixels[index] = pixels[index]*(1-0.5) + color*0.5;
+        }
+
+        __host__ __device__ Vector<float> getPosition() const {
             return position;
         }
 
-        void setPosition(const Vector<float>& pos) {
+        __host__ __device__ void setPosition(const Vector<float>& pos) {
             position=pos;
         }
 
-        void move(const Vector<float>& offset) {
+        __host__ __device__ void move(const Vector<float>& offset) {
             position += offset;
         }
 
-        inline Vector<float> getVectFront() const {
+        __host__ __device__ Vector<float> getVectFront() const {
             return vectFront;
         }
 
-        void setVectFront(Vector<float>& ori) {
+        __host__ __device__ void setVectFront(Vector<float>& ori) {
             vectFront=ori;
         }
 
-        inline float getFov() const {
+        __host__ __device__ float getFov() const {
             return fov;
         }
 
-        void rotate(float angle, uint axis) {
+        __host__ __device__ void rotate(const float angle, const uint axis) {
             Vector<float> direction;
             switch (axis) {
             case ROT_FRONT:
@@ -125,7 +141,7 @@ class Camera {
                 break;
             
             default:
-                std::cout << "Wrong axis provided" << std::endl;
+                //std::cout << "Wrong axis provided" << std::endl;
                 return;
             }
             float ux = direction.getX();
@@ -141,7 +157,11 @@ class Camera {
             vectUp=(R*vectUp).normalize();
         }
 
-        void write_png_file(const char* filename, uint8_t* image_data) {
+        __host__ __device__ Ray generate_ray(const uint w, const uint h) const {
+            return Ray(position, (vectFront*fov+getPixelCoordOnCapt(w,h)).normalize());
+        }
+
+        __host__ void write_png_file(const char* filename, uint8_t* image_data) {
             FILE *fp = fopen(filename, "wb");
             png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
             png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -162,10 +182,10 @@ class Camera {
             fclose(fp);
         }
 
-        void renderImage(const char* filename) {
+        __host__ void renderImage(const char* filename) {
             uint8_t* image_data = new uint8_t[width * height * 3];
             
-            for(uint i = 0; i < width * height; ++i) {
+            for(uint i = 0; i < pixels.size(); ++i) {
                 uint8_t r = pixels[i].getR();
                 uint8_t g = pixels[i].getG();
                 uint8_t b = pixels[i].getB();
@@ -180,73 +200,5 @@ class Camera {
             delete[] image_data;
         }
 
-        void initWindow() {
-            SDL_Init(SDL_INIT_EVERYTHING);
-            window = SDL_CreateWindow("Raytracer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0);
-            renderer = SDL_CreateRenderer(window, -1, 0);
-        }
-
-        void closeWindow() {
-            SDL_DestroyRenderer(renderer);
-            SDL_DestroyWindow(window);
-        }
-
-        void updateTexture() {
-            SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 24, 0, 0, 0, 0);
-            unsigned char* surface_pixels = (unsigned char*)surface -> pixels;
-            for(uint h = 0; h < height; ++h) {
-                for(uint w = 0; w < width; ++w) {
-                    surface_pixels[3 * (h * surface->w + w) + 0] = pixels[h*width+w].getB();
-                    surface_pixels[3 * (h * surface->w + w) + 1] = pixels[h*width+w].getG();
-                    surface_pixels[3 * (h * surface->w + w) + 2] = pixels[h*width+w].getR();
-                }
-            }
-            SDL_DestroyTexture(texture);
-            texture = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_FreeSurface(surface);
-        }
-
-        static void threadLoop(Camera* cam) {
-            std::cout << "Thread launched" << std::endl;
-            cam->initWindow();
-            SDL_Event e;
-            bool running = true;
-            while(running) {
-                while (SDL_PollEvent(&e)) {
-                    if (e.type == SDL_QUIT) running = false;
-                    if (e.key.keysym.sym == SDLK_UP) {
-                        cam->move(Vector<float>(0.1, 0., 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_DOWN) {
-                        cam->move(Vector<float>(-0.1, 0., 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_LEFT) {
-                        cam->move(Vector<float>(0., 0.1, 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_RIGHT) {
-                        cam->move(Vector<float>(0., -0.1, 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_SPACE) {
-                        cam->move(Vector<float>(0., 0., 0.1));
-                    }
-                    if (e.key.keysym.sym == SDLK_LSHIFT) {
-                        cam->move(Vector<float>(0., 0., -0.1));
-                    }
-                }
-                cam->updateTexture();
-                SDL_RenderCopy(cam->renderer, cam->texture, nullptr, nullptr);
-                SDL_RenderPresent(cam->renderer);
-                SDL_Delay(1000*(Uint32)1./cam->FPS);
-            }
-            cam->isOnBool = false;
-            cam->closeWindow();
-        }
-
-        void showImage() {
-            renderThread = std::thread(threadLoop, this);
-        }
-
-        void stop() {
-            renderThread.join();
-        }
+        
 };

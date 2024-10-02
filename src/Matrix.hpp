@@ -100,15 +100,15 @@ class Matrix {
         }
 
         __host__ __device__ Vector<T> operator * (const Vector<T>& vec) const {
-            Vector<T> ligne1 = Vector(a11,a12,a13);
-            Vector<T> ligne2 = Vector(a21,a22,a23);
-            Vector<T> ligne3 = Vector(a31,a32,a33);
+            Vector<T> ligne1 = Vector<T>(a11,a12,a13);
+            Vector<T> ligne2 = Vector<T>(a21,a22,a23);
+            Vector<T> ligne3 = Vector<T>(a31,a32,a33);
             return Vector<T>(ligne1*vec,ligne2*vec,ligne3*vec);
         }
 
         template<typename U>
         __host__ __device__ Matrix<T> operator * (U number) const {
-            Matrix<T> result = Matrix(*this);
+            Matrix<T> result = Matrix<T>(*this);
             result.a11 *= number;
             result.a12 *= number;
             result.a13 *= number;
@@ -123,7 +123,7 @@ class Matrix {
 
         template<typename U>
         __host__ __device__ Matrix<T> operator / (U number) const {
-            Matrix<T> result = Matrix(*this);
+            Matrix<T> result = Matrix<T>(*this);
             result.a11 /= number;
             result.a12 /= number;
             result.a13 /= number;

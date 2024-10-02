@@ -6,6 +6,8 @@
 #include "Triangle.hpp"
 #include "Mesh.hpp"
 
+#include "utils/cuda_ready.hpp"
+
 class BoundingBox {
     private:
         Vector<float> min = Vector<float>(1, 1, 1)*INFINITY;
@@ -128,7 +130,7 @@ class Node {
         }
 };
 
-class BVH {
+class BVH : public CudaReady {
     private:
         uint maxDepth = 5;
     
@@ -259,17 +261,22 @@ class BVH {
             }
         }
 
-        __host__ void cuda() {
+        __host__ void cuda() override {
             allNodes.cuda();
             allTriangles.cuda();
         }
 
-        __host__ void cpu() {
+        __host__ void cpu() override {
             allNodes.cpu();
             allTriangles.cpu();
         }
 
-        __host__ void free() {
+        __host__ void sync_to_cpu() override {
+            allNodes.sync_to_cpu();
+            allTriangles.sync_to_cpu();
+        }
+
+        __host__ void free() override {
             allNodes.free();
             allTriangles.free();
         }
