@@ -13,7 +13,7 @@ CXXFLAGS	:= -std=c++20 -Wall -Wextra -g
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
 #   their path using -Lpath, something like:
-LFLAGS = -lpng -fopenmp -lm -lcudart -lSDL2
+LFLAGS = -lpng -fopenmp -lm -lcudart -lSDL2 -lSDL2_ttf
 
 # define output directory
 OUTPUT	:= build

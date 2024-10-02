@@ -7,10 +7,10 @@ __device__ void RayTraceShader::shader(const int idx, int state) {
     uint h = idx2/W;
     for (int i=0;i<params.samplesByThread;i++) {
         Ray ray = params.cam.generate_ray(w, h);
-        incomingLight += ray.rayTraceBVHDevice(idx*state+i, ray, params.bvhs);
+        incomingLight += ray.rayTraceBVHDevice(state*1874+idx*8172+i*7868, ray, params.bvhs);
     }
     incomingLight /= params.samplesByThread;
-    params.cam.setPixel(idx, Pixel(incomingLight));
+    params.cam.updatePixel(idx, Pixel(incomingLight));
 }
 
 __global__ void kernel(RayTraceShader shader, int state) {

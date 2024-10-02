@@ -45,7 +45,6 @@ class Environment {
         Environment() {};
         Environment(Camera* cam0) : cam(cam0) {};
         ~Environment() {
-            std::cout << "Env destructor" << std::endl;
             if (mode==BVH_RAYTRACING) {
                 BVHs.cpu();
                 BVHs.free();
@@ -173,7 +172,7 @@ class Environment {
                             do {
                                 Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
-
+                                
                                 vectTmp = (ray.rayTraceHost(meshes, h*w)).toVector();
 
                                 colorVec += vectTmp;
@@ -221,18 +220,22 @@ class Environment {
         void renderCudaBVH() {
             auto start = std::chrono::steady_clock::now();
 
-            srand(time(NULL));
-            int state  = rand() % 500 + 1;
+            std::chrono::milliseconds ms = duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            );
+
+            srand(ms.count());
+            int state  = rand() % 50000 + 1;
 
             RayTraceShader shader = RayTraceShader({BVHs, *cam, samplesByThread});
             compute_shader(shader, state);
 
             AggregShader shader2 = AggregShader({*cam});
-            //compute_shader(shader2, state);
+            compute_shader(shader2, state);
 
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<float> elapsed_seconds = end-start;
-            std::cout << "FPS:\t" << 1./(elapsed_seconds.count()) << std::endl;
+            cam->setCurrentFPS(1./(elapsed_seconds.count()));
         }
 
         void addBackground(const Pixel& color) {

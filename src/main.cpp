@@ -87,6 +87,7 @@ void animObj() {
 	env.setMode(Mode::BVH_RAYTRACING);
 	env.compute_bvhs();
 
+	viewport.start();
 	while (viewport.isOn()) {
 		env.renderCudaBVH();
 	}
