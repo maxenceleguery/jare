@@ -37,21 +37,21 @@ class Camera : public CudaReady {
         Array<Pixel> pixels;
 
     public:
+        bool is_raytrace_enable = false;
         uint threadsByRay = 1;
 
         __host__ Camera() {};
         __host__ Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0) {
-            pixels =  Array<Pixel>(width0*height0*threadsByRay);
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
         __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0*threadsByRay) {
-            pixels =  Array<Pixel>(width0*height0*threadsByRay);
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
 
         __host__ void cuda() override {
+            pixels =  Array<Pixel>(width*height*threadsByRay);
             pixels.cuda();
         }
 
@@ -65,6 +65,11 @@ class Camera : public CudaReady {
 
         __host__ void free() override {
             pixels.free();
+        }
+
+        __host__ void toggleRaytracing() {
+            is_raytrace_enable = !is_raytrace_enable;
+            num_images_rendered = 1;
         }
 
         __host__ __device__ uint getWidth() const {
@@ -113,8 +118,9 @@ class Camera : public CudaReady {
         __host__ __device__ void updatePixel(const uint index, const Pixel& color) {
             //if (index==0) printf("%u\n", num_images_rendered);
             const float weight = 1.f / (num_images_rendered);
-            if (num_images_rendered < 50)
-                pixels[index] = pixels[index]*(1-weight) + color*weight;
+            if (num_images_rendered > 50 && !is_raytrace_enable) return;
+            if (num_images_rendered > 200 && is_raytrace_enable) return;
+            pixels[index] = pixels[index]*(1-weight) + color*weight;
         }
 
         __host__ __device__ Vector<float> getPosition() const {

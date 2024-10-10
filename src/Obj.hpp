@@ -55,14 +55,14 @@ class Obj {
                     float xn = atof(splitted[1].c_str());
                     float yn = atof(splitted[2].c_str());
                     float zn = atof(splitted[3].c_str());
-                    vn.push_back(Vector<float>(xn, yn, zn));
+                    vn.push_back(Vector<float>(xn, yn, zn).normalize());
                 }
                 else if (splitted[0] == "f") {
                     splitted = split(rtrim(ligne), ' ');
                     std::vector<Vector<int>> vecticesIndexes;
                     for (uint i=1;i<splitted.size();i++) {
                         std::vector<std::string> splittedTriangles = split(splitted[i], '/');
-                        vecticesIndexes.push_back(Vector<int>(atoi(splittedTriangles[0].c_str())-1,atoi(splittedTriangles[1].c_str())-1,atoi(splittedTriangles[2].c_str())-1));
+                        vecticesIndexes.push_back(Vector<int>(atoi(splittedTriangles[0].c_str())-1, atoi(splittedTriangles[1].c_str())-1, atoi(splittedTriangles[2].c_str())-1));
                     }
                     trianglesVecticesIndexes.push_back(vecticesIndexes);
                 }    
@@ -86,23 +86,23 @@ class Obj {
             vn.push_back(vertex);
         }
 
-        std::vector<Vector<float>> getVertices() {
+        std::vector<Vector<float>> getVertices() const {
             return v;
         }
 
-        std::vector<Vector<float>> getTextureVertices() {
+        std::vector<Vector<float>> getTextureVertices() const {
             return vt;
         }
 
-        std::vector<Vector<float>> getNormalVertices() {
+        std::vector<Vector<float>> getNormalVertices() const {
             return vn;
         }
 
-        std::vector<std::vector<Vector<int>>> getIndexes() {
+        std::vector<std::vector<Vector<int>>> getIndexes() const {
             return trianglesVecticesIndexes;
         }
 
-        void print() {
+        void print() const {
             for (uint i=0;i<v.size();i++) {
                 v[i].printCoord();
             }

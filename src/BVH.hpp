@@ -193,15 +193,12 @@ class BVH : public CudaReady {
             float bestCost = INFINITY;
 
             // Estimate best split pos
-            for (uint axis = 0; axis < 3; axis++)
-            {
-                for (uint i = 0; i < numSplitTests; i++)
-                {
+            for (uint axis = 0; axis < 3; axis++) {
+                for (uint i = 0; i < numSplitTests; i++) {
                     float splitT = (i + 1) / (numSplitTests + 1.);
                     float splitPos = Utils::smoothStep(node.getBoundingBox().getMin()[axis], node.getBoundingBox().getMax()[axis], splitT);
                     float cost = evaluateSplit(axis, splitPos, start, count);
-                    if (cost < bestCost)
-                    {
+                    if (cost < bestCost) {
                         bestCost = cost;
                         bestSplitPos = splitPos;
                         bestSplitAxis = axis;

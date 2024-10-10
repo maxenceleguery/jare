@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cuda_runtime.h>
 
+#include "../utils/Random.hpp"
+
 #define cudaErrorCheck(call){cudaAssert(call,__FILE__,__LINE__);}
 
 void cudaAssert(const cudaError err, const char *file, const int line);
@@ -10,12 +12,17 @@ void cudaAssert(const cudaError err, const char *file, const int line);
 class Shader {
     protected:
         unsigned int W, H, blocksize, nblocks, nthreads;
+        RandomGenerator rand_gen;
 
     public:
         __host__ __device__ Shader(const unsigned int W, const unsigned int H) : W(W), H(H) {
             blocksize = 256; // 1024 at most
             nthreads = 1;
             nblocks = nthreads*H*W / blocksize;
+        };
+
+        __host__ __device__ Shader(const unsigned int W, const unsigned int H, const unsigned long seed) : Shader(W, H) {
+            rand_gen = RandomGenerator(seed);
         };
         
         __host__ __device__ unsigned int getW() const {

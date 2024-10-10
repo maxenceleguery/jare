@@ -8,17 +8,16 @@
 
 #include "Shader.hpp"
 
-struct RayTraceShaderParams {
+struct RasterizeShaderParams {
     Array<BVH> bvhs;
     Camera cam;
-    uint samplesByThread;
 };
 
-class RayTraceShader : public Shader {
+class RasterizeShader : public Shader {
     private:
-        RayTraceShaderParams params;
+        RasterizeShaderParams params;
     public:
-        __host__ __device__ RayTraceShader(const RayTraceShaderParams _params, unsigned long seed) : Shader(_params.cam.getWidth(), _params.cam.getHeight(), seed) {
+        __host__ __device__ RasterizeShader(const RasterizeShaderParams _params, unsigned long seed) : Shader(_params.cam.getWidth(), _params.cam.getHeight(), seed) {
             params = _params;
         };
         __device__ void shader(const int idx);
@@ -27,6 +26,6 @@ class RayTraceShader : public Shader {
         }
 };
 
-__global__ void kernel(RayTraceShader shader);
+__global__ void kernel(RasterizeShader shader);
 
-void compute_shader(RayTraceShader shader);
+void compute_shader(RasterizeShader shader);

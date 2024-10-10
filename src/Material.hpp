@@ -66,7 +66,14 @@ class Material {
                     break;
             }
         };
+        __host__ __device__ Material(Pixel color0, MaterialType mat_type, const unsigned long seed) : Material(color0, mat_type) {
+            random_gen = RandomGenerator(seed);
+        }
         __host__ __device__ ~Material() {};
+
+        __host__ __device__ void setSeed(const unsigned long seed) {
+            random_gen = RandomGenerator(seed);
+        }
 
         __host__ __device__ Pixel getColor() const {
             return emissionColor;
@@ -147,9 +154,9 @@ class Material {
             return finalDirection;
         }
 
-        __host__ __device__ void shade(Vector<float>* incomingLight, Vector<float>* rayColor, const Vector<float>& ray_direction, Vector<float> normal) const {
+        __host__ __device__ void shade(Vector<float>* incomingLight, Vector<float>* rayColor, const Vector<float>& ray_direction, Vector<float> normal, const float dist) const {
             Vector<float> emittedLight = emissionColor.toVector() * emissionStrengh;
-            *incomingLight += emittedLight.productTermByTerm(*rayColor);
+            *incomingLight += emittedLight.productTermByTerm(*rayColor);//* 5./(dist*dist);
             //incomingLight->clamp(0.f, 1.f);
             *rayColor = rayColor->productTermByTerm(emissionColor.toVector()*(normal*ray_direction) * 2);
         }

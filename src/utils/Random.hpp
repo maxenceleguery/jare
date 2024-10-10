@@ -12,8 +12,13 @@ class RandomGenerator {
     private:
         unsigned long inner_state = 0;
     public:
-         __host__ __device__ RandomGenerator() {};
-         __host__ __device__ ~RandomGenerator() {};
+        __host__ __device__ RandomGenerator() {};
+        __host__ __device__ RandomGenerator(const unsigned long seed) : inner_state(seed) {};
+        __host__ __device__ ~RandomGenerator() {};
+
+        __host__ __device__ void updateSeed(const unsigned long seed) {
+            inner_state += seed;
+        }
 
         __host__ __device__ float randomValue(uint& state) {
             if (inner_state == 0) inner_state = state + 1;
@@ -63,6 +68,31 @@ class RandomGenerator {
                 x = randomValueNormalDistribution(state);
                 y = randomValueNormalDistribution(state);
                 z = randomValueNormalDistribution(state);
+            } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
+            return Vector<float>(x,y,z).normalize();
+        }
+
+
+        __host__ __device__ float randomValue() {
+            const unsigned long a = 1664525; // multiplier
+            const unsigned long c = 1013904223; // increment
+            const unsigned long m = 4294967296; // 2^32
+            inner_state = (a * inner_state + c) % m;
+            return static_cast<float>(inner_state) / (m - 1);
+        }
+
+        __host__ __device__ float randomValueNormalDistribution() { 
+            float theta = 2 * PI * randomValue();
+            const float rho = std::sqrt(-2*std::log(randomValue()));
+            return rho*std::cos(theta);
+        }
+
+        __host__ __device__ Vector<float> randomDirection() {
+            float x;  float y;  float z;
+            do {
+                x = randomValueNormalDistribution();
+                y = randomValueNormalDistribution();
+                z = randomValueNormalDistribution();
             } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
             return Vector<float>(x,y,z).normalize();
         }

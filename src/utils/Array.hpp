@@ -22,8 +22,8 @@ class Array : public CudaReady {
             data = data_cpu;
         };
 
-        __host__ Array(const T& tri) : Array(1) {
-            push_back(tri);
+        __host__ Array(const T& item) : Array(1) {
+            push_back(item);
         };
 
         __host__ uint push_back(const T item) {
@@ -48,17 +48,22 @@ class Array : public CudaReady {
 
         template<typename I>
         __host__ __device__ T operator[](const I i) const {
-            return data[i];
+            //printf("%d, %u, %d\n", spaceUsed + i, spaceUsed, i);
+            if (i < 0) return data[(int)spaceUsed + i];
+            else return data[i];
         }
 
         template<typename I>
         __host__ __device__ T& operator[](const I i) {
-            return data[i];
+            //printf("%d, %u, %d\n", spaceUsed + i, spaceUsed, i);
+            if (i < 0) return data[(int)spaceUsed + i];
+            else return data[i];
         }
 
         template<typename I>
         __host__ __device__ T getValueFromCPU(const I i) const {
-            return data_cpu[i];
+            if (i < 0) return data_cpu[(int)spaceUsed + i];
+            else return data_cpu[i];
         }
         
         __host__ void cuda() override {

@@ -13,7 +13,7 @@
 
 class Ray : public Line {
     private:
-        uint maxBounce = 20;
+        uint maxBounce = 10;
         RandomGenerator random_gen;
         RayInfo ray_info = {1.000293f, false};
     
@@ -57,7 +57,7 @@ class Ray : public Line {
 
         __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<float>* incomingLight, Vector<float>* rayColor) {
             Material mat = hit.getMaterial();
-            mat.shade(incomingLight, rayColor, ray.direction, hit.getNormal());
+            mat.shade(incomingLight, rayColor, ray.direction, hit.getNormal(), hit.getDistanceTraveled());
         }
 
         // Thanks to https://tavianator.com/2011/ray_box.html
@@ -95,7 +95,7 @@ class Ray : public Line {
             const Vector<float> intersection = point + direction * dst;
             hit.setHasHit(std::abs(determinant) >= 1E-8 && dst >= 1E-8 && u >= 1E-8 && v >= 1E-8 && w >= 1E-8);
             hit.setPoint(intersection);
-            hit.setNormal(tri.getNormalVector());
+            hit.setNormal(tri.getNormalVector(u, v, w));
             hit.setMaterial(tri.getMaterial());
             hit.setDistance(dst);
             return hit;
@@ -257,6 +257,29 @@ class Ray : public Line {
                     //incomingLight.clamp(0.f, 1.f);
                     break;
                 }
+            }
+            return incomingLight;
+        }
+
+        __device__ Vector<float> rasterizeBVHDevice(Ray ray, Array<BVH> bvhs) {
+            Vector<float> incomingLight = Vector<float>();
+            Vector<float> rayColor = Vector<float>(1.,1.,1.);
+            Hit hit = Hit();
+            for (uint i = 0; i<bvhs.size(); i++) {
+                ray.rayTriangleBVH(bvhs[i], 0, 0, hit);
+            }
+            if (hit.getHasHit()) {
+                //updateLight(ray, hit, &incomingLight, &rayColor);
+                incomingLight = hit.getMaterial().getColor().toVector();
+                
+                //const float p = rayColor.max();
+                //if (random_gen.randomValue(idx*bounce) >= p) {
+                    //break;
+                //}
+                //rayColor *= 1.0f / p;
+            } else {
+                //incomingLight += envLight(ray).productTermByTerm(rayColor);
+                //incomingLight.clamp(0.f, 1.f);
             }
             return incomingLight;
         }

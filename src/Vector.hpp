@@ -74,6 +74,10 @@ class Vector {
                         << std::endl;
         }
 
+        __host__ __device__ void printCoordDevice() const {
+            printf("(%f, %f, %f)\n", x, y, z);
+        }
+
         __host__ __device__ Vector<T> invCoords() const {
             return Vector<T>(1./x, 1./y, 1./z);
         }
@@ -241,6 +245,14 @@ class Vector {
 
         __host__ __device__ T min() const {
             return Utils::min(x, Utils::min(y, z));
+        }
+
+        __host__ __device__ T sum() const {
+            return x+y+z;
+        }
+
+        __host__ __device__ T mean() const {
+            return (x+y+z)/3.;
         }
 
         __host__ __device__ Vector<T> lerp(const Vector<T>& vec2, const float percentage) const {

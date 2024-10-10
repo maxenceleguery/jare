@@ -6,6 +6,7 @@
 #include "Line.hpp"
 #include "Ray.hpp"
 
+#include "shaders/Rasterize.hpp"
 #include "shaders/RayTrace.hpp"
 #include "shaders/Aggreg.hpp"
 
@@ -35,7 +36,7 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 16;
+        uint samplesByThread = 8;
 
         Pixel backgroundColor = Pixel(0,0,0);
         Mode mode = BVH_RAYTRACING;
@@ -94,6 +95,7 @@ class Environment {
             //obj.print();
 
             std::vector<Vector<float>> vertices = obj.getVertices();
+            std::vector<Vector<float>> normal_vertices = obj.getNormalVertices();
             std::vector<std::vector<Vector<int>>> indexes = obj.getIndexes();
 
             float angle = 3.14159/2.0;
@@ -116,13 +118,18 @@ class Environment {
                 for (uint v=2;v<fi.size();v++) {
                     Triangle triangle = Triangle(mat);
                     if (v==2) {
-                        triangle.setvertex(0, R*vertices[fi[0].getX()]*scale + offset );
-                        triangle.setvertex(1, R*vertices[fi[1].getX()]*scale + offset );
-                        triangle.setvertex(2, R*vertices[fi[2].getX()]*scale + offset );
+                        for (uint j = 0; j<3; j++) { 
+                            triangle.setvertex(j, R*vertices[fi[j].getX()]*scale + offset );
+                            triangle.setNormal(j, R*normal_vertices[fi[j].getZ()] );
+                        }
                     } else {
                         triangle.setvertex(0, R*vertices[fi[v-3].getX()]*scale + offset );
                         triangle.setvertex(1, R*vertices[fi[v-1].getX()]*scale + offset );
-                        triangle.setvertex(2, R*vertices[fi[v].getX()]*scale + offset );
+                        triangle.setvertex(2, R*vertices[fi[v  ].getX()]*scale + offset );
+
+                        triangle.setNormal(0, R*normal_vertices[fi[v-3].getZ()] );
+                        triangle.setNormal(1, R*normal_vertices[fi[v-1].getZ()] );
+                        triangle.setNormal(2, R*normal_vertices[fi[v  ].getZ()] );
                     }
                     mesh.push_back(triangle);
                     obj.nbTriangles += 1;
@@ -226,12 +233,18 @@ class Environment {
 
             srand(ms.count());
             int state  = rand();
+            //std::cout << state << std::endl;
 
-            RayTraceShader shader = RayTraceShader({BVHs, *cam, samplesByThread});
-            compute_shader(shader, state);
+            RasterizeShader raster = RasterizeShader({BVHs, *cam}, state);
+            compute_shader(raster);
 
-            AggregShader shader2 = AggregShader({*cam});
-            compute_shader(shader2, state);
+            if (cam->is_raytrace_enable) {
+                RayTraceShader raytrace = RayTraceShader({BVHs, *cam, samplesByThread}, state);
+                compute_shader(raytrace);
+            }
+
+            //AggregShader shader2 = AggregShader({*cam});
+            //compute_shader(shader2, state);
 
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<float> elapsed_seconds = end-start;

@@ -12,6 +12,7 @@ class Viewport {
 
         SDL_Window* window;
         SDL_Renderer* renderer;
+        
         SDL_Texture* texture;
 
         TTF_Font* font;
@@ -83,23 +84,34 @@ class Viewport {
             while(running) {
                 while (SDL_PollEvent(&e)) {
                     if (e.type == SDL_QUIT) running = false;
-                    if (e.key.keysym.sym == SDLK_UP) {
-                        viewport->cam->move(Vector<float>(0.1, 0., 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_DOWN) {
-                        viewport->cam->move(Vector<float>(-0.1, 0., 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_LEFT) {
-                        viewport->cam->move(Vector<float>(0., 0.1, 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_RIGHT) {
-                        viewport->cam->move(Vector<float>(0., -0.1, 0.));
-                    }
-                    if (e.key.keysym.sym == SDLK_SPACE) {
-                        viewport->cam->move(Vector<float>(0., 0., 0.1));
-                    }
-                    if (e.key.keysym.sym == SDLK_LSHIFT) {
-                        viewport->cam->move(Vector<float>(0., 0., -0.1));
+
+                    if (e.type == SDL_KEYDOWN) {
+                        switch (e.key.keysym.sym) {
+                            case SDLK_UP:
+                                viewport->cam->move(Vector<float>(0.1, 0., 0.));                        
+                                break;
+                            case SDLK_DOWN:
+                                viewport->cam->move(Vector<float>(-0.1, 0., 0.));
+                                break;
+                            case SDLK_LEFT:
+                                viewport->cam->move(Vector<float>(0., 0.1, 0.));
+                                break;
+                            case SDLK_RIGHT:
+                                viewport->cam->move(Vector<float>(0., -0.1, 0.));
+                                break;
+                            case SDLK_SPACE:
+                                viewport->cam->move(Vector<float>(0., 0., 0.1));
+                                break;
+                            case SDLK_LSHIFT:
+                                viewport->cam->move(Vector<float>(0., 0., -0.1));
+                                break;
+                            case SDLK_r:
+                                viewport->cam->toggleRaytracing();
+                                SDL_Delay(50);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
                 viewport->updateTexture();

@@ -81,8 +81,8 @@ void animObj() {
 	//env.addSquare(Vector(0.,0.,0.),Vector(2.,-2.,0.),Vector(2.,-2.,2.),Vector(0.,0.,2.), Material(Colors::WHITE, MaterialType::GLASS));
 	//env.addSquare(Vector(0.,0.,2.),Vector(2.,-2.,1.),Vector(2.,0.,2.),Vector(2.,2.,2.), Material(Colors::WHITE, MaterialType::GLASS));
 
-	env.addObj("knight.obj",Vector<float>(0,0,0), 0.5, Material(Colors::WHITE, MaterialType::GLASS));
-
+	env.addObj("knight.obj", Vector<float>(0,0,0), 0.5, Material(Colors::WHITE, MaterialType::DEFAULT));
+	env.addObj("sphere.obj", Vector<float>(0,2,2), 0.5, Material(Colors::WHITE, MaterialType::DEFAULT));
 	//env.addBackground(Colors::BLACK);
 	env.setMode(Mode::BVH_RAYTRACING);
 	env.compute_bvhs();
@@ -117,7 +117,17 @@ int main() {
 	std::cout << h << " == " << idx/W << std::endl;
 	std::cout << w << " == " << idx%W << std::endl;
 	*/
+	
+	Ray ray = Ray(Vector<float>(0, 0, -1), Vector<float>(0, 1, 1));
+	Triangle tri = Triangle();
+	tri.setvertex(0, Vector<float>(-1, 0, 0));
+	tri.setvertex(1, Vector<float>(1, 0, 0));
+	tri.setvertex(2, Vector<float>(0, 2, 0));
+	Hit hit = ray.rayTriangle(tri);
+	//hit.getNormal().printCoord();
+	//hit.getPoint().printCoord();
 
+	//return 0;
 	auto start = std::chrono::steady_clock::now();
 	animObj();
 	auto end = std::chrono::steady_clock::now();
