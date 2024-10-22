@@ -34,7 +34,7 @@ class Pixel {
                 throw std::invalid_argument("Pixel's values must be between 0 and 255");*/
         };
         // Vector values has to be between 0 and 1
-        __host__ __device__ Pixel(const Vector<double>& vec0) : r(min(255,vec0.getX()*255)), g(min(255,vec0.getY()*255)), b(min(255,vec0.getZ()*255)) {};
+        __host__ __device__ Pixel(const Vector<float>& vec0) : r(min(255,vec0.getX()*255)), g(min(255,vec0.getY()*255)), b(min(255,vec0.getZ()*255)) {};
         __host__ __device__ ~Pixel() {};
 
         __host__ void renderPixel(std::ofstream& imageFlux) const {
@@ -53,15 +53,15 @@ class Pixel {
             return b;
         }
 
-        __host__ __device__ void setR(uint8_t r0) {
+        __host__ __device__ void setR(const uint8_t r0) {
             r=r0;
         }
 
-        __host__ __device__ void setG(uint8_t g0) {
+        __host__ __device__ void setG(const uint8_t g0) {
             g=g0;
         } 
 
-        __host__ __device__ void setB(uint8_t b0) {
+        __host__ __device__ void setB(const uint8_t b0) {
             b=b0;
         } 
 
@@ -72,12 +72,24 @@ class Pixel {
             return *this;
         }
 
-        __host__ __device__ Pixel operator/ (const double number) const {
+        __host__ __device__ Pixel operator+ (const Pixel& other) const {
+            return Pixel(r+other.r,g+other.g,b+other.b);
+        }
+
+        __host__ __device__ Pixel operator- (const Pixel& other) const {
+            return Pixel(r-other.r,g-other.g,b-other.b);
+        }
+
+        __host__ __device__ Pixel operator* (const float number) const {
+            return Pixel(r*number,g*number,b*number);
+        }
+
+        __host__ __device__ Pixel operator/ (const float number) const {
             return Pixel(r/number,g/number,b/number);
         }
 
-        __host__ __device__ Vector<double> toVector() const {
-            return Vector<double>(r,g,b)/255.0;
+        __host__ __device__ Vector<float> toVector() const {
+            return Vector<float>(r,g,b)/255.0;
         }
 };
 

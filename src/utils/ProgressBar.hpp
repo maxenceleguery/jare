@@ -5,7 +5,7 @@
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
 
-void printProgress(const double percentage) {
+void printProgress(const float percentage) {
     if (percentage >= 1.0) {
         std::cout << std::endl;
         return;

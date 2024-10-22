@@ -37,10 +37,23 @@ class Matrix {
                 a31=0.; a32=0.; a33=0.;
             }
         };
-        __host__ __device__ Matrix(Vector<double> vec1, Vector<double> vec2, Vector<double> vec3) {
+        __host__ __device__ Matrix(Vector<float> vec1, Vector<float> vec2, Vector<float> vec3) {
             a11=vec1.getX(); a12=vec2.getX(); a13=vec3.getX();
             a21=vec1.getY(); a22=vec2.getY(); a23=vec3.getY();
             a31=vec1.getZ(); a32=vec2.getZ(); a33=vec3.getZ();
+        }
+
+        template<typename U>
+        __host__ __device__ Matrix(const Matrix<U>& mat) {
+            a11 = static_cast<T>(mat[0]);
+            a12 = static_cast<T>(mat[1]);
+            a13 = static_cast<T>(mat[2]);
+            a21 = static_cast<T>(mat[3]);
+            a22 = static_cast<T>(mat[4]);
+            a23 = static_cast<T>(mat[5]);
+            a31 = static_cast<T>(mat[6]);
+            a32 = static_cast<T>(mat[7]);
+            a33 = static_cast<T>(mat[8]);
         }
         __host__ __device__ ~Matrix(){};
 
@@ -87,15 +100,15 @@ class Matrix {
         }
 
         __host__ __device__ Vector<T> operator * (const Vector<T>& vec) const {
-            Vector<T> ligne1 = Vector(a11,a12,a13);
-            Vector<T> ligne2 = Vector(a21,a22,a23);
-            Vector<T> ligne3 = Vector(a31,a32,a33);
+            Vector<T> ligne1 = Vector<T>(a11,a12,a13);
+            Vector<T> ligne2 = Vector<T>(a21,a22,a23);
+            Vector<T> ligne3 = Vector<T>(a31,a32,a33);
             return Vector<T>(ligne1*vec,ligne2*vec,ligne3*vec);
         }
 
         template<typename U>
         __host__ __device__ Matrix<T> operator * (U number) const {
-            Matrix<T> result = Matrix(*this);
+            Matrix<T> result = Matrix<T>(*this);
             result.a11 *= number;
             result.a12 *= number;
             result.a13 *= number;
@@ -110,7 +123,7 @@ class Matrix {
 
         template<typename U>
         __host__ __device__ Matrix<T> operator / (U number) const {
-            Matrix<T> result = Matrix(*this);
+            Matrix<T> result = Matrix<T>(*this);
             result.a11 /= number;
             result.a12 /= number;
             result.a13 /= number;
