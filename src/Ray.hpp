@@ -14,7 +14,6 @@
 class Ray : public Line {
     private:
         uint maxBounce = 10;
-        RandomGenerator random_gen;
         RayInfo ray_info = {1.000293f, false};
     
     public:
@@ -26,7 +25,7 @@ class Ray : public Line {
         }
 
         // TODO Background light
-        __host__ __device__ Vector<float> envLight(Ray ray) {
+        __host__ __device__ Vector<float> envLight() {
             if (true) {
                 // Global illumination
                 return Vector<float>(1.f, 1.f, 1.f);
@@ -39,29 +38,29 @@ class Ray : public Line {
             const float sunIntensity = 0.1f;
 
 
-            const float skyGradientT = std::pow(Utils::smoothStep(0.0f, 0.8f, ray.direction.getZ()), 0.35f);
+            const float skyGradientT = std::pow(Utils::smoothStep(0.0f, 0.8f, direction.getZ()), 0.35f);
             const Vector<float> skyGradient = skyColorHorizon.lerp(skyColorZenith, skyGradientT);
-            const float sun = std::pow(Utils::max(0.f, ray.direction*sunLightDirection), sunFocus) * sunIntensity;
+            const float sun = std::pow(Utils::max(0.f, direction*sunLightDirection), sunFocus) * sunIntensity;
 
-            const float groundToSkyT = Utils::smoothStep(-0.01f, 0.0f, ray.direction.getZ());
+            const float groundToSkyT = Utils::smoothStep(-0.01f, 0.0f, direction.getZ());
             return groundColor.lerp(skyGradient, groundToSkyT) + sun * (groundToSkyT >= 1);
         }
 
-        __host__ __device__ void updateRay(Ray& ray, const Hit& hit, uint state) {
+        __host__ __device__ void updateRay(const Hit& hit, uint state) {
             Material mat = hit.getMaterial();
-            Vector<float> finalDirection = mat.trace(ray.direction, hit.getNormal(), ray.ray_info, state);
+            const Vector<float> finalDirection = mat.trace(direction, hit.getNormal(), ray_info, state);
             // New ray after bounce
-            ray.setPoint(hit.getPoint());
-            ray.setDirection(finalDirection);
+            setPoint(hit.getPoint());
+            setDirection(finalDirection);
         }
 
-        __host__ __device__ void updateLight(Ray& ray, const Hit& hit, Vector<float>* incomingLight, Vector<float>* rayColor) {
+        __host__ __device__ void updateLight(const Hit& hit, Vector<float>* incomingLight, Vector<float>* rayColor) const {
             Material mat = hit.getMaterial();
-            mat.shade(incomingLight, rayColor, ray.direction, hit.getNormal(), hit.getDistanceTraveled());
+            mat.shade(incomingLight, rayColor, direction, hit.getNormal(), hit.getDistanceTraveled());
         }
 
         // Thanks to https://tavianator.com/2011/ray_box.html
-        __host__ __device__ float distToBounds(const BoundingBox& bounds) {
+        __host__ __device__ float distToBounds(const BoundingBox& bounds) const {
             const Vector<float> tMin = (bounds.getMin() - point).productTermByTerm(invDir);
             const Vector<float> tMax = (bounds.getMax() - point).productTermByTerm(invDir);
             const Vector<float> t1 = tMin.min(tMax);
@@ -74,7 +73,7 @@ class Ray : public Line {
             return dst;
         }
 
-        __host__ __device__ Hit rayTriangle(const Triangle& tri) {           
+        __host__ __device__ Hit rayTriangle(const Triangle& tri) const {           
             const Vector<float> edgeAB = tri.getVertex(1) - tri.getVertex(0);
             const Vector<float> edgeAC = tri.getVertex(2) - tri.getVertex(0);
             const Vector<float> normalVector = edgeAB.crossProduct(edgeAC);
@@ -112,7 +111,7 @@ class Ray : public Line {
                 const bool isLeaf = node.getTriangleCount() > 0;
 
                 if (isLeaf) {
-                    for (uint j=0; j<node.getTriangleCount(); j++) {
+                    for (int j=0; j<node.getTriangleCount(); j++) {
                         Hit hit_tmp = rayTriangle(bvh.allTriangles[triOffset + node.getTriangleIndex() + j]);
                         finalHit.update(hit_tmp);
                     }
@@ -140,148 +139,4 @@ class Ray : public Line {
             }
             hit.update(finalHit);
         }
-
-        __host__ Hit simpleTraceHost(const Meshes& meshes) {
-            Hit finalHit;
-            for (uint i=0;i<meshes.size();i++) {
-                for (uint j=0; j<meshes[i].size(); j++) {
-                    Hit hit = rayTriangle(meshes[i][j]);
-                    finalHit.update(hit);
-                }
-            }
-            return finalHit;
-        }
-
-        __device__ Hit simpleTraceDevice(Triangle* triangles, const uint nbTriangles) {
-            Hit finalHit;
-            for (uint i=0;i<nbTriangles;i++) {
-                Hit hit = rayTriangle(triangles[i]);
-                finalHit.update(hit);
-            }
-            return finalHit;
-        }
-
-        __host__ Pixel simpleRayTraceHost(Meshes& meshes, const Pixel& backgroundColor) {
-            Hit hit = simpleTraceHost(meshes);
-            if (hit.getHasHit())
-                return hit.getMaterial().getColor();
-            else
-                return backgroundColor;
-        }
-
-        __host__ Pixel rayTraceHost(Meshes& meshes, uint state) {
-            Vector<float> incomingLight = Vector<float>();
-            Vector<float> rayColor = Vector<float>(1.,1.,1.);
-            for (uint bounce=0;bounce<maxBounce;bounce++) {
-                Hit hit = simpleTraceHost(meshes);
-                if (hit.getHasHit()) {
-                    updateRay(*this, hit, state);
-                    updateLight(*this, hit, &incomingLight, &rayColor);
-                    //const float p = rayColor.max();
-                    //if (random_gen.randomValue(state) >= p) {
-                    //    break;
-                    //}
-                    //rayColor *= 1.0f / p;
-                } else {
-                    incomingLight += envLight(*this).productTermByTerm(rayColor);
-                    break;
-                }
-            }
-            return Pixel(incomingLight);
-        }
-
-        __device__ Vector<float> rayTraceDevice(int idx, Ray ray, Triangle* triangles, uint nbTriangles) {
-            Vector<float> incomingLight = Vector<float>();
-            Vector<float> rayColor = Vector<float>(1.,1.,1.);
-            for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
-                Hit hit = ray.simpleTraceDevice(triangles, nbTriangles);
-                if (hit.getHasHit()) {
-                    updateRay(ray, hit, idx);
-                    updateLight(ray, hit, &incomingLight, &rayColor);
-                    //const float p = rayColor.max();
-                    //if (random_gen.randomValue(uidx) >= p) {
-                    //    break;
-                    //}
-                    //rayColor *= 1.0f / p;
-                } else {
-                    incomingLight += envLight(ray).productTermByTerm(rayColor);
-                    break;
-                }
-            }
-            return incomingLight;
-        }
-
-        __host__ Pixel rayTraceBVHHost(const Array<BVH>& bvhs, uint state) {
-            Vector<float> incomingLight = Vector<float>();
-            Vector<float> rayColor = Vector<float>(1.,1.,1.);
-            for (uint bounce=0;bounce<maxBounce;bounce++) {
-                Hit hit = Hit();
-                for (uint i = 0; i<bvhs.size(); i++) {
-                    rayTriangleBVH(bvhs[i], 0, 0, hit);
-                }
-                if (hit.getHasHit()) {
-                    updateRay(*this, hit, state);
-                    updateLight(*this, hit, &incomingLight, &rayColor);
-                    //const float p = rayColor.max();
-                    //if (random_gen.randomValue(state) >= p) {
-                    //    break;
-                    //}
-                    //rayColor *= 1.0f / p;
-                } else {
-                    incomingLight += envLight(*this).productTermByTerm(rayColor);
-                    break;
-                }
-            }
-            return Pixel(incomingLight);
-        }
-
-        __device__ Vector<float> rayTraceBVHDevice(const int idx, Ray ray, Array<BVH> bvhs) {
-            Vector<float> incomingLight = Vector<float>();
-            Vector<float> rayColor = Vector<float>(1.,1.,1.);
-            for (uint bounce=0;bounce<ray.getMaxBounce();bounce++) {
-                Hit hit = Hit();
-                for (uint i = 0; i<bvhs.size(); i++) {
-                    ray.rayTriangleBVH(bvhs[i], 0, 0, hit);
-                }
-                if (hit.getHasHit()) {
-                    updateRay(ray, hit, idx);
-                    updateLight(ray, hit, &incomingLight, &rayColor);
-                    
-                    //const float p = rayColor.max();
-                    //if (random_gen.randomValue(idx*bounce) >= p) {
-                        //break;
-                    //}
-                    //rayColor *= 1.0f / p;
-                } else {
-                    //incomingLight += envLight(ray).productTermByTerm(rayColor);
-                    //incomingLight.clamp(0.f, 1.f);
-                    break;
-                }
-            }
-            return incomingLight;
-        }
-
-        __device__ Vector<float> rasterizeBVHDevice(Ray ray, Array<BVH> bvhs) {
-            Vector<float> incomingLight = Vector<float>();
-            Vector<float> rayColor = Vector<float>(1.,1.,1.);
-            Hit hit = Hit();
-            for (uint i = 0; i<bvhs.size(); i++) {
-                ray.rayTriangleBVH(bvhs[i], 0, 0, hit);
-            }
-            if (hit.getHasHit()) {
-                //updateLight(ray, hit, &incomingLight, &rayColor);
-                incomingLight = hit.getMaterial().getColor().toVector();
-                
-                //const float p = rayColor.max();
-                //if (random_gen.randomValue(idx*bounce) >= p) {
-                    //break;
-                //}
-                //rayColor *= 1.0f / p;
-            } else {
-                //incomingLight += envLight(ray).productTermByTerm(rayColor);
-                //incomingLight.clamp(0.f, 1.f);
-            }
-            return incomingLight;
-        }
-
 };

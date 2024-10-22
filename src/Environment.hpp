@@ -9,6 +9,9 @@
 #include "shaders/Rasterize.hpp"
 #include "shaders/RayTrace.hpp"
 #include "shaders/Aggreg.hpp"
+#include "shaders/Convolve.hpp"
+
+#include "Tracing.hpp"
 
 #include "Image.hpp"
 #include "Obj.hpp"
@@ -36,21 +39,35 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 8;
+        uint samplesByThread = 2;
 
         Pixel backgroundColor = Pixel(0,0,0);
         Mode mode = BVH_RAYTRACING;
         Array<BVH> BVHs = Array<BVH>();
 
     public:
-        Environment() {};
-        Environment(Camera* cam0) : cam(cam0) {};
+        Environment() {
+            std::chrono::milliseconds ms = duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            );
+            srand(ms.count());
+        };
+        Environment(Camera* cam0) : Environment() {
+            cam = cam0;
+        };
         ~Environment() {
             if (mode==BVH_RAYTRACING) {
                 BVHs.cpu();
                 BVHs.free();
             }
         };
+
+        void addBackground(const Pixel& color) {
+            backgroundColor = color;
+            for(uint h = 0; h < cam->getHeight(); ++h) 
+                for(uint w = 0; w < cam->getWidth(); ++w)
+                    cam->setPixel(h*cam->getWidth()+w, color);
+        }
 
         void compute_bvhs() {
             auto start = std::chrono::steady_clock::now();
@@ -158,6 +175,8 @@ class Environment {
                 for(uint w = 0; w < W; ++w) {
                     printProgress((h*W+(w+1))/(1.*H*W));
 
+                    uint idx = h*W+w;
+
                     Pixel color;
                     Vector<float> colorVec;
                     
@@ -165,7 +184,7 @@ class Environment {
                         Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
                         Ray ray = Ray(cam->getPosition(),direction);
 
-                        color = ray.simpleRayTraceHost(meshes, backgroundColor);
+                        color = Tracing::simpleRayTraceHost(ray, meshes, backgroundColor);
                     }
 
                     else if (mode==RAYTRACING) {
@@ -180,7 +199,7 @@ class Environment {
                                 Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
                                 
-                                vectTmp = (ray.rayTraceHost(meshes, h*w)).toVector();
+                                vectTmp = (Tracing::rayTraceHost(ray, meshes, idx)).toVector();
 
                                 colorVec += vectTmp;
                                 dx++;
@@ -203,7 +222,7 @@ class Environment {
                                 Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
 
-                                vectTmp = (ray.rayTraceBVHHost(BVHs, h*w)).toVector();
+                                vectTmp = (Tracing::rayTraceBVHHost(ray, BVHs, idx)).toVector();
 
                                 colorVec += vectTmp;
                                 dx++;
@@ -226,21 +245,17 @@ class Environment {
         
         void renderCudaBVH() {
             auto start = std::chrono::steady_clock::now();
-
-            std::chrono::milliseconds ms = duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()
-            );
-
-            srand(ms.count());
-            int state  = rand();
+            int state  = rand() % 1000000000 + 1;
             //std::cout << state << std::endl;
-
-            RasterizeShader raster = RasterizeShader({BVHs, *cam}, state);
-            compute_shader(raster);
 
             if (cam->is_raytrace_enable) {
                 RayTraceShader raytrace = RayTraceShader({BVHs, *cam, samplesByThread}, state);
                 compute_shader(raytrace);
+                //ConvolutionShader denoise = ConvolutionShader({ {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}}, *cam});
+                //compute_shader(denoise);
+            } else {
+                RasterizeShader raster = RasterizeShader({BVHs, *cam}, state);
+                compute_shader(raster);
             }
 
             //AggregShader shader2 = AggregShader({*cam});
@@ -249,12 +264,5 @@ class Environment {
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<float> elapsed_seconds = end-start;
             cam->setCurrentFPS(1./(elapsed_seconds.count()));
-        }
-
-        void addBackground(const Pixel& color) {
-            backgroundColor = color;
-            for(uint h = 0; h < cam->getHeight(); ++h) 
-                for(uint w = 0; w < cam->getWidth(); ++w)
-                    cam->setPixel(h*cam->getWidth()+w, color);
         }
 };

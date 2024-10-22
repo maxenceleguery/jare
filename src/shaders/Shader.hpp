@@ -12,7 +12,7 @@ void cudaAssert(const cudaError err, const char *file, const int line);
 class Shader {
     protected:
         unsigned int W, H, blocksize, nblocks, nthreads;
-        RandomGenerator rand_gen;
+        unsigned long seed;
 
     public:
         __host__ __device__ Shader(const unsigned int W, const unsigned int H) : W(W), H(H) {
@@ -21,8 +21,8 @@ class Shader {
             nblocks = nthreads*H*W / blocksize;
         };
 
-        __host__ __device__ Shader(const unsigned int W, const unsigned int H, const unsigned long seed) : Shader(W, H) {
-            rand_gen = RandomGenerator(seed);
+        __host__ __device__ Shader(const unsigned int W, const unsigned int H, const unsigned long _seed) : Shader(W, H) {
+            seed = _seed;
         };
         
         __host__ __device__ unsigned int getW() const {
@@ -39,6 +39,9 @@ class Shader {
         }
         __host__ __device__ unsigned int getNthreads() const {
             return nthreads;
+        }
+        __host__ __device__ uint getMaxIndex() const {
+            return H*W*nthreads;
         }
 
         //__device__ void shader(int idx, int state); // Function to override

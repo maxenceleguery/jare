@@ -21,9 +21,6 @@ class RasterizeShader : public Shader {
             params = _params;
         };
         __device__ void shader(const int idx);
-        __host__ __device__ uint getMaxIndex() const {
-            return H*W*nthreads;
-        }
 };
 
 __global__ void kernel(RasterizeShader shader);

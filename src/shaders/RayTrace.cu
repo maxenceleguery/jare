@@ -1,16 +1,19 @@
 #include "RayTrace.hpp"
+#include "../Tracing.hpp"
 
 __device__ void RayTraceShader::shader(const int idx) {
     Vector<float> incomingLight;
-    uint idx2 = idx%(W*H);
-    uint w = idx2%W;
-    uint h = idx2/W;
+    Pair pair = params.cam.indexToCoord(idx);
+    const uint w = pair.width;
+    const uint h = pair.height;
+    
     for (int i=0;i<params.samplesByThread;i++) {
         Ray ray = params.cam.generate_ray(w, h);
-        //state = state*144965205+i*68524+idx*57635273;
-        int state = rand_gen.randomValue()*100000000;
-        //if (idx == 0) printf("%d\n", state);
-        incomingLight += ray.rayTraceBVHDevice(state, ray, params.bvhs);
+        //randomValue(state);
+        uint state = seed+484585*(idx+1)+956595*(i+1);
+        state = 10000000*randomValue(state);
+        //if (idx == 0) printf("%u : %u -> %f\n", idx, state, randomValue(state));
+        incomingLight += Tracing::rayTraceBVHDevice(seed+484585*idx+956595*i, ray, params.bvhs);
     }
     incomingLight /= params.samplesByThread;
     params.cam.updatePixel(idx, Pixel(incomingLight));

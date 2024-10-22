@@ -19,7 +19,7 @@ struct RayInfo {
 };
 
 
-class Material {
+class Material : public RandomInterface {
     private:
         Pixel emissionColor;
         float emissionStrengh = 0;
@@ -32,8 +32,6 @@ class Material {
         float transparency = 0;
         float refractive_index = 1.000293;
 
-        RandomGenerator random_gen;
-
         __host__ __device__ int sign(const float number) const {
             return number<0 ? -1 : 1;
         }
@@ -45,6 +43,7 @@ class Material {
             switch(mat_type) {
                 case MIRROR:
                     specularSmoothness = 1;
+                    specularProb = 1;
                     break;
 
                 case LIGHT:
@@ -66,14 +65,7 @@ class Material {
                     break;
             }
         };
-        __host__ __device__ Material(Pixel color0, MaterialType mat_type, const unsigned long seed) : Material(color0, mat_type) {
-            random_gen = RandomGenerator(seed);
-        }
         __host__ __device__ ~Material() {};
-
-        __host__ __device__ void setSeed(const unsigned long seed) {
-            random_gen = RandomGenerator(seed);
-        }
 
         __host__ __device__ Pixel getColor() const {
             return emissionColor;
@@ -111,14 +103,14 @@ class Material {
         }
 
         __host__ __device__ Vector<float> getDiffusionDirection(const Vector<float>& ray_direction, Vector<float> normal, uint state) {
-            Vector<float> dir = random_gen.randomDirection(state);
-            normal *= sign(-ray_direction*normal);
+            Vector<float> dir = randomDirection(state);
+            //normal *= sign(-ray_direction*normal);
             return dir*sign(dir*normal);
         }
 
         // Specular or reflexion direction
         __host__ __device__ Vector<float> getSpecularDirection(const Vector<float>& ray_direction, Vector<float> normal) const {
-            normal *= sign(-ray_direction*normal);
+            //normal *= sign(-ray_direction*normal);
             return (ray_direction - normal*2*(ray_direction*normal)).normalize();
         }
         
@@ -142,12 +134,12 @@ class Material {
             // Diffusion
             Vector<float> finalDirection = getDiffusionDirection(ray_direction, normal, state);
             // Specular
-            if (specularProb >= random_gen.randomValue(state)) {
+            if (specularProb >= randomValue(state)) {
                 Vector<float> specularDir = getSpecularDirection(ray_direction, normal);
                 finalDirection = finalDirection.lerp(specularDir, specularSmoothness).normalize();
             }
             // Refraction
-            else if (transparency >= random_gen.randomValue(state)) {
+            if (transparency >= randomValue(state)) {
                 Vector<float> refractionDir = getRefractionDirection(ray_direction, normal, ray_info);
                 finalDirection = refractionDir;
             }

@@ -1,4 +1,5 @@
 #include "Rasterize.hpp"
+#include "../Tracing.hpp"
 
 __device__ void RasterizeShader::shader(const int idx) {
     uint idx2 = idx%(W*H);
@@ -6,7 +7,7 @@ __device__ void RasterizeShader::shader(const int idx) {
     uint h = idx2/W;
 
     Ray ray = params.cam.generate_ray(w, h);
-    Vector<float> incomingLight = ray.rasterizeBVHDevice(ray, params.bvhs);
+    Vector<float> incomingLight = Tracing::rasterizeBVHDevice(ray, params.bvhs);
 
     params.cam.updatePixel(idx, Pixel(incomingLight));
 }

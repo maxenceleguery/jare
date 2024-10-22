@@ -49,21 +49,30 @@ class Array : public CudaReady {
         template<typename I>
         __host__ __device__ T operator[](const I i) const {
             //printf("%d, %u, %d\n", spaceUsed + i, spaceUsed, i);
-            if (i < 0) return data[(int)spaceUsed + i];
-            else return data[i];
+            if constexpr (std::is_signed_v<I>) {
+                if (i < 0)
+                    return data[(int)spaceUsed + i];
+            }
+            return data[i];
         }
 
         template<typename I>
         __host__ __device__ T& operator[](const I i) {
             //printf("%d, %u, %d\n", spaceUsed + i, spaceUsed, i);
-            if (i < 0) return data[(int)spaceUsed + i];
-            else return data[i];
+            if constexpr (std::is_signed_v<I>) {
+                if (i < 0)
+                    return data[(int)spaceUsed + i];
+            }
+            return data[i];
         }
 
         template<typename I>
         __host__ __device__ T getValueFromCPU(const I i) const {
-            if (i < 0) return data_cpu[(int)spaceUsed + i];
-            else return data_cpu[i];
+            if constexpr (std::is_signed_v<I>) {
+                if (i < 0)
+                    return data_cpu[(int)spaceUsed + i];
+            }
+            return data_cpu[i];
         }
         
         __host__ void cuda() override {

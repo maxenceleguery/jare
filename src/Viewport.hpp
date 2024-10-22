@@ -36,7 +36,10 @@ class Viewport {
             renderer = SDL_CreateRenderer(window, -1, 0);
             font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 24);
             if (font == nullptr) {
-                std::cout << "Font not found" << std::endl;
+                font = TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 24);
+                if (font == nullptr) {
+                    std::cout << "Font not found" << std::endl;
+                }
             }
         }
 
@@ -68,7 +71,7 @@ class Viewport {
 
         void updateFPSDisplay() {
             SDL_Color White = {255, 255, 255, 255};
-            std::string message = std::to_string(cam->getCurrentFPS()).substr(0, 4) + " FPS";
+            std::string message = std::to_string(cam->getCurrentFPS()).substr(0, 5) + " FPS";
             SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, message.c_str(), White); 
 
             SDL_DestroyTexture(fps_display);
@@ -88,7 +91,7 @@ class Viewport {
                     if (e.type == SDL_KEYDOWN) {
                         switch (e.key.keysym.sym) {
                             case SDLK_UP:
-                                viewport->cam->move(Vector<float>(0.1, 0., 0.));                        
+                                viewport->cam->move(Vector<float>(0.1, 0., 0.));
                                 break;
                             case SDLK_DOWN:
                                 viewport->cam->move(Vector<float>(-0.1, 0., 0.));

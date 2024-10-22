@@ -16,6 +16,11 @@
 #define ROT_FRONT 2001
 #define ROT_UP 2002
 
+struct Pair {
+    uint width;
+    uint height;
+};
+
 class Camera : public CudaReady {
     private:
         Vector<float> position;
@@ -50,8 +55,11 @@ class Camera : public CudaReady {
             capteurHeight = 0.005;
         };
 
+        __host__ void init() {
+            pixels = Array<Pixel>(width*height*threadsByRay);
+        }
+
         __host__ void cuda() override {
-            pixels =  Array<Pixel>(width*height*threadsByRay);
             pixels.cuda();
         }
 
@@ -69,7 +77,7 @@ class Camera : public CudaReady {
 
         __host__ void toggleRaytracing() {
             is_raytrace_enable = !is_raytrace_enable;
-            num_images_rendered = 1;
+            num_images_rendered = 0;
         }
 
         __host__ __device__ uint getWidth() const {
@@ -116,11 +124,17 @@ class Camera : public CudaReady {
         }
 
         __host__ __device__ void updatePixel(const uint index, const Pixel& color) {
-            //if (index==0) printf("%u\n", num_images_rendered);
-            const float weight = 1.f / (num_images_rendered);
-            if (num_images_rendered > 50 && !is_raytrace_enable) return;
-            if (num_images_rendered > 200 && is_raytrace_enable) return;
-            pixels[index] = pixels[index]*(1-weight) + color*weight;
+            pixels[index] = Pixel((pixels[index].toVector()*num_images_rendered + color.toVector()) / (num_images_rendered+1));
+            //pixels[index] = Pixel( (pixels[index].toVector() + color.toVector()) / 2 );
+        }
+
+        __host__ __device__ Pair indexToCoord(const uint index) const {
+            const uint idx = index%(width*height);
+            return {idx%width, idx/width};
+        }
+
+        __host__ __device__ uint coordToIndex(const uint w, const uint h) const {
+            return h*width+w;
         }
 
         __host__ __device__ Vector<float> getPosition() const {
@@ -133,7 +147,7 @@ class Camera : public CudaReady {
 
         __host__ __device__ void move(const Vector<float>& offset) {
             position += offset;
-            num_images_rendered = 1;
+            num_images_rendered = 0;
         }
 
         __host__ __device__ Vector<float> getVectFront() const {
