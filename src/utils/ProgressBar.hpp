@@ -6,7 +6,7 @@
 #define PBWIDTH 60
 
 void printProgress(const float percentage) {
-    if (percentage >= 1.0) {
+    if (percentage >= 1.f) {
         std::cout << std::endl;
         return;
     }
@@ -19,6 +19,6 @@ void printProgress(const float percentage) {
         else if (i == pos) std::cout << ">";
         else std::cout << " ";
     }
-    std::cout << "] " << int(percentage * 100.0) << " %\r";
+    std::cout << "] " << int(percentage * 100.f) << " %\r";
     std::cout.flush();
 }

@@ -180,7 +180,7 @@ class Matrix {
         }
 
         __host__ __device__ bool isInversible() const {
-            return (std::abs(det()) > 1E-5);
+            return (std::abs(det()) > 1E-5f);
         }
 
         __host__ __device__ Matrix<T> inverse() const {

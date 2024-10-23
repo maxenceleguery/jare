@@ -173,7 +173,7 @@ class Environment {
             for(uint h = 0; h < H; ++h) {
                 //#pragma omp parallel for num_threads(omp_get_num_devices())
                 for(uint w = 0; w < W; ++w) {
-                    printProgress((h*W+(w+1))/(1.*H*W));
+                    printProgress((h*W+(w+1))/(1.f*H*W));
 
                     uint idx = h*W+w;
 
@@ -192,20 +192,20 @@ class Environment {
                         samples = 4; // has to be a perfect square
                         int samplesSqrt=(int)std::sqrt(samples);
                         
-                        float dy=-(samplesSqrt-1)/2.;
+                        float dy=-(samplesSqrt-1)/2.f;
                         do {
-                            float dx=-(samplesSqrt-1)/2.;
+                            float dx=-(samplesSqrt-1)/2.f;
                             do {
-                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.f*samplesSqrt),h+dy/(1.f*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
                                 
                                 vectTmp = (Tracing::rayTraceHost(ray, meshes, idx)).toVector();
 
                                 colorVec += vectTmp;
                                 dx++;
-                            } while (dx<(samplesSqrt-1)/2);
+                            } while (dx<(samplesSqrt-1)/2.f);
                             dy++;
-                        } while (dy<(samplesSqrt-1)/2.);
+                        } while (dy<(samplesSqrt-1)/2.f);
                         colorVec/=(samples/2);
                         color=Pixel(colorVec);
                     }
@@ -215,11 +215,11 @@ class Environment {
                         samples = 1; // has to be a perfect square
                         int samplesSqrt=(int)std::sqrt(samples);
                         
-                        float dy=-(samplesSqrt-1)/2.;
+                        float dy=-(samplesSqrt-1)/2.f;
                         do {
                             float dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.*samplesSqrt),h+dy/(1.*samplesSqrt))).normalize();
+                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.f*samplesSqrt),h+dy/(1.f*samplesSqrt))).normalize();
                                 Ray ray = Ray(cam->getPosition(),direction);
 
                                 vectTmp = (Tracing::rayTraceBVHHost(ray, BVHs, idx)).toVector();
@@ -228,7 +228,7 @@ class Environment {
                                 dx++;
                             } while (dx<(samplesSqrt-1)/2);
                             dy++;
-                        } while (dy<(samplesSqrt-1)/2.);
+                        } while (dy<(samplesSqrt-1)/2.f);
                         colorVec/=(samples/2);
                         color=Pixel(colorVec);
                     }
@@ -236,9 +236,6 @@ class Environment {
                 }
             }
             if (mode==BVH_RAYTRACING) {
-                for (uint i=0; i<BVHs.size(); i++) {
-                    BVHs[i].free();
-                }
                 BVHs.free();
             }
         }
@@ -263,6 +260,6 @@ class Environment {
 
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<float> elapsed_seconds = end-start;
-            cam->setCurrentFPS(1./(elapsed_seconds.count()));
+            cam->setCurrentFPS(1.f/(elapsed_seconds.count()));
         }
 };

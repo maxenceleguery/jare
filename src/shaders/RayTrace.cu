@@ -3,7 +3,7 @@
 
 __device__ void RayTraceShader::shader(const int idx) {
     Vector<float> incomingLight;
-    Pair pair = params.cam.indexToCoord(idx);
+    CoordsPair pair = params.cam.indexToCoord(idx);
     const uint w = pair.width;
     const uint h = pair.height;
     

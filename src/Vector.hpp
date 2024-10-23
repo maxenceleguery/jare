@@ -79,7 +79,7 @@ class Vector {
         }
 
         __host__ __device__ Vector<T> invCoords() const {
-            return Vector<T>(1./x, 1./y, 1./z);
+            return Vector<T>(1.f/x, 1.f/y, 1.f/z);
         }
 
         __host__ __device__ T normSquared() const {
@@ -90,7 +90,7 @@ class Vector {
             return std::sqrt(x*x + y*y + z*z);
         }
 
-        __host__ __device__ Vector normalize() {
+        __host__ __device__ Vector<T> normalize() {
             const float invNorm = fast_inverse_square_root(normSquared());
             x*=invNorm;
             y*=invNorm;
@@ -98,7 +98,7 @@ class Vector {
             return *this;
         }
 
-        __host__ __device__ Vector normalize() const {
+        __host__ __device__ Vector<T> normalize() const {
             const float invNorm = fast_inverse_square_root(normSquared());
             return Vector<T>(x*invNorm, y*invNorm, z*invNorm);
         }
@@ -197,7 +197,7 @@ class Vector {
         template <typename U>
         __host__ __device__ bool operator == (const Vector<U>& vec) const {
             if (std::is_same<T,U>::value) {
-                return std::abs(x-vec.getX()) < 1E-3 && std::abs(y-vec.getY()) < 1E-3 && std::abs(z-vec.getZ()) < 1E-3;
+                return std::abs(x-vec.getX()) < 1E-3f && std::abs(y-vec.getY()) < 1E-3f && std::abs(z-vec.getZ()) < 1E-3f;
             }
             return false;
         }

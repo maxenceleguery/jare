@@ -63,6 +63,9 @@ class Material : public RandomInterface {
                     refractive_index = 1.333;
                     specularSmoothness = 1;
                     break;
+
+                case DEFAULT:
+                    break;
             }
         };
         __host__ __device__ ~Material() {};

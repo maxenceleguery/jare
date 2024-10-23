@@ -16,7 +16,7 @@
 #define ROT_FRONT 2001
 #define ROT_UP 2002
 
-struct Pair {
+struct CoordsPair {
     uint width;
     uint height;
 };
@@ -25,9 +25,9 @@ class Camera : public CudaReady {
     private:
         Vector<float> position;
 
-        Vector<float> vectRight;
         Vector<float> vectFront;
         Vector<float> vectUp;
+        Vector<float> vectRight;
 
         uint width;
         uint height;
@@ -50,7 +50,11 @@ class Camera : public CudaReady {
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
-        __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : position(pos), vectFront(front.normalize()), vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0), pixels(width0*height0*threadsByRay) {
+        __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0)
+            : position(pos), vectFront(front.normalize()),
+            vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()),
+            width(width0), height(height0) {
+
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
@@ -106,8 +110,8 @@ class Camera : public CudaReady {
         }
 
         __host__ __device__ Vector<float> getPixelCoordOnCapt(const float w, const float h) const {
-            const float W = (1.*w - width/2.)*(1.*capteurWidth/width);
-            const float H = (-1.*h + height/2.)*(1.*capteurHeight/height);
+            const float W = (1.f*w - width/2.f)*(1.f*capteurWidth/width);
+            const float H = (-1.f*h + height/2.f)*(1.f*capteurHeight/height);
             return vectUp*H + vectRight*W;
         }
 
@@ -128,7 +132,7 @@ class Camera : public CudaReady {
             //pixels[index] = Pixel( (pixels[index].toVector() + color.toVector()) / 2 );
         }
 
-        __host__ __device__ Pair indexToCoord(const uint index) const {
+        __host__ __device__ CoordsPair indexToCoord(const uint index) const {
             const uint idx = index%(width*height);
             return {idx%width, idx/width};
         }

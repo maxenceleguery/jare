@@ -105,7 +105,7 @@ void test_random() {
 	RandomInterface random_test;
 	uint state = 894965656;
 
-	float threshold = 124.34f;
+	double threshold = 124.34;
 	uint n = 10000;
 	uint k = 100;
 	if (n/k < 5) {
@@ -124,12 +124,12 @@ void test_random() {
 		//state = random_test.randomValue(state)*100000000000000;
 	}
 
-	float khi_square = 0;
+	double khi_square = 0;
 	for (uint j=0; j<k; j++) {
 		//std::cout << c[j] << std::endl;
 		khi_square += std::pow(c[j] - (1.f*n)/(1.f*k), 2);
 	}
-	khi_square *= (1.f*k)/(1.f*n);
+	khi_square *= (1.*k)/(1.*n);
 	if (khi_square > threshold) {
 		throw Khi2Error(khi_square, threshold);
 	}

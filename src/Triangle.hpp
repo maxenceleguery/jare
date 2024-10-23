@@ -132,7 +132,7 @@ class Triangle {
 
         __host__ __device__ bool isOnPlane(const Vector<float>& vec) const {
             Vector<float> normalVector = getNormalVector();
-            return std::abs( (vec-vertex0).normalize()*normalVector ) < 1E-8;
+            return std::abs( (vec-vertex0).normalize()*normalVector ) < 1E-8f;
         }
 
         __host__ __device__ float triangleArea(const Vector<float>& v1, const Vector<float>& v2, const Vector<float>& v3) const {

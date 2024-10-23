@@ -76,7 +76,7 @@ class RandomGenerator {
                 x = randomValueNormalDistribution(state);
                 y = randomValueNormalDistribution(state);
                 z = randomValueNormalDistribution(state);
-            } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
+            } while ( std::abs(x)<1E-5f && std::abs(y)<1E-5f && std::abs(z)<1E-5f);            
             return Vector<float>(x,y,z).normalize();
         }
 
@@ -101,14 +101,14 @@ class RandomGenerator {
                 x = randomValueNormalDistribution();
                 y = randomValueNormalDistribution();
                 z = randomValueNormalDistribution();
-            } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
+            } while ( std::abs(x)<1E-5f && std::abs(y)<1E-5f && std::abs(z)<1E-5f);            
             return Vector<float>(x,y,z).normalize();
         }
 };
 
 class RandomInterface {
     public:
-        __host__ __device__ double randomValue(uint state) {
+        __host__ __device__ float randomValue(uint state) {
             #ifdef  __CUDA_ARCH__
                 state *= (clock64() % 10) ^ 156;
             #else
@@ -118,25 +118,25 @@ class RandomInterface {
             state = state*747796405 + 2891336453;
             uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
             result = (result >> 22) ^ result;
-            return result / 4294967295.0;
+            return result / 4294967295.0f;
         }
 
-        __host__ __device__ double randomValueNormalDistribution(uint state) { 
-            double theta = 2 * PI * randomValue(state);
-            double rho = std::sqrt(-2*std::log(randomValue(state*state)));
+        __host__ __device__ float randomValueNormalDistribution(uint state) { 
+            float theta = 2 * PI * randomValue(state);
+            float rho = std::sqrt(-2*std::log(randomValue(state*state)));
             return rho*std::cos(theta);
         }
 
-        __host__ __device__ Vector<double> randomDirection(uint state) {
-            double x;  double y;  double z;
+        __host__ __device__ Vector<float> randomDirection(uint state) {
+            float x;  float y;  float z;
             do {
                 x = randomValueNormalDistribution(state);
                 state = randomValue(state)*100000000000000;
                 y = randomValueNormalDistribution(state);
                 state = randomValue(state)*100000000000000;
                 z = randomValueNormalDistribution(state);
-            } while ( std::abs(x)<1E-5 && std::abs(y)<1E-5 && std::abs(z)<1E-5);            
-            return Vector<double>(x,y,z).normalize();
+            } while ( std::abs(x)<1E-5f && std::abs(y)<1E-5f && std::abs(z)<1E-5f);            
+            return Vector<float>(x,y,z).normalize();
         }
 };
 
@@ -145,7 +145,7 @@ class Khi2Error : public std::runtime_error {
         std::string what_message;
     public:
         Khi2Error() : std::runtime_error("Khi² exception") {};
-        Khi2Error(const float value, const float threshold) : std::runtime_error("Khi² exception") {
+        Khi2Error(const double value, const double threshold) : std::runtime_error("Khi² exception") {
             what_message = "Khi² exception : " + std::to_string(value) + " > " + std::to_string(threshold);
         };
         virtual ~Khi2Error() noexcept = default;

@@ -1,7 +1,7 @@
 #include "Convolve.hpp"
 
 __device__ void ConvolutionShader::shader(const int idx) {
-    Pair pair = params.cam.indexToCoord(idx);
+    CoordsPair pair = params.cam.indexToCoord(idx);
     const uint w = pair.width;
     const uint h = pair.height;
 

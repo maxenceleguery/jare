@@ -81,18 +81,18 @@ class Ray : public Line {
             const Vector<float> dao = ao.crossProduct(direction);
 
             const float determinant = -direction*normalVector;
-            const float invDet = 1.0 / determinant;
+            const float invDet = 1.0f / determinant;
 
             // Calculate dst to triangle & barycentric coordinates of intersection point
             const float dst = (ao*normalVector) * invDet;
             const float u = (edgeAC*dao) * invDet;
             const float v = -(edgeAB*dao) * invDet;
-            const float w = 1.0 - u - v;
+            const float w = 1.0f - u - v;
 
             // Initialize hit info
             Hit hit;
             const Vector<float> intersection = point + direction * dst;
-            hit.setHasHit(std::abs(determinant) >= 1E-8 && dst >= 1E-8 && u >= 1E-8 && v >= 1E-8 && w >= 1E-8);
+            hit.setHasHit(std::abs(determinant) >= 1E-8f && dst >= 1E-8f && u >= 1E-8f && v >= 1E-8f && w >= 1E-8f);
             hit.setPoint(intersection);
             hit.setNormal(tri.getNormalVector(u, v, w));
             hit.setMaterial(tri.getMaterial());
