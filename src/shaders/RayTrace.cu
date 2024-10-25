@@ -13,10 +13,10 @@ __device__ void RayTraceShader::shader(const int idx) {
         uint state = seed+484585*(idx+1)+956595*(i+1);
         state = 10000000*randomValue(state);
         //if (idx == 0) printf("%u : %u -> %f\n", idx, state, randomValue(state));
-        incomingLight += Tracing::rayTraceBVHDevice(seed+484585*idx+956595*i, ray, params.bvhs);
+        incomingLight += Tracing::rayTraceBVHDevice(state+seed+484585*idx+956595*i, ray, params.bvhs);
     }
     incomingLight /= params.samplesByThread;
-    params.cam.updatePixel(idx, Pixel(incomingLight));
+    params.cam.setPixel(idx, Pixel(incomingLight));
 }
 
 __global__ void kernel(RayTraceShader shader) {

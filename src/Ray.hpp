@@ -100,7 +100,7 @@ class Ray : public Line {
             return hit;
         }
 
-        __host__ __device__ void rayTriangleBVH(const BVH& bvh, const uint nodeOffset, const uint triOffset, Hit& hit) {
+        __host__ __device__ Hit rayTriangleBVH(const int bvh_index, const BVH& bvh, const uint nodeOffset, const uint triOffset) {
             Hit finalHit;
             uint stack[128];
             uint stackIndex = 0;
@@ -113,7 +113,7 @@ class Ray : public Line {
                 if (isLeaf) {
                     for (int j=0; j<node.getTriangleCount(); j++) {
                         Hit hit_tmp = rayTriangle(bvh.allTriangles[triOffset + node.getTriangleIndex() + j]);
-                        finalHit.update(hit_tmp);
+                        finalHit.update(hit_tmp, bvh_index);
                     }
                 } else {
                     const uint childIndexA = nodeOffset + node.getChildIndex() + 0;
@@ -137,6 +137,6 @@ class Ray : public Line {
                     }
                 }
             }
-            hit.update(finalHit);
+            return finalHit;
         }
 };

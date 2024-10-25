@@ -15,7 +15,7 @@ namespace Tracing {
         for (int i=0;i<meshes.size();i++) {
             for (int j=0; j<meshes[i].size(); j++) {
                 Hit hit = ray.rayTriangle(meshes[i][j]);
-                finalHit.update(hit);
+                finalHit.update(hit, j);
             }
         }
         return finalHit;
@@ -25,7 +25,7 @@ namespace Tracing {
         Hit finalHit;
         for (int i=0;i<nbTriangles;i++) {
             Hit hit = ray.rayTriangle(triangles[i]);
-            finalHit.update(hit);
+            finalHit.update(hit, -1);
         }
         return finalHit;
     }
@@ -41,7 +41,7 @@ namespace Tracing {
     __host__ static Pixel rayTraceHost(Ray& ray, Meshes& meshes, uint state) {
         Vector<float> incomingLight = Vector<float>();
         Vector<float> rayColor = Vector<float>(1.,1.,1.);
-        for (int bounce=0;bounce<ray.getMaxBounce();bounce++) {
+        for (int bounce=0; bounce<ray.getMaxBounce(); bounce++) {
             Hit hit = simpleTraceHost(ray, meshes);
             if (hit.getHasHit()) {
                 ray.updateRay(hit, state);
@@ -62,7 +62,7 @@ namespace Tracing {
     __device__ static Vector<float> rayTraceDevice(uint state, Ray& ray, Triangle* triangles, uint nbTriangles) {
         Vector<float> incomingLight = Vector<float>();
         Vector<float> rayColor = Vector<float>(1.,1.,1.);
-        for (int bounce=0;bounce<ray.getMaxBounce();bounce++) {
+        for (int bounce=0; bounce<ray.getMaxBounce(); bounce++) {
             Hit hit = simpleTraceDevice(ray, triangles, nbTriangles);
             if (hit.getHasHit()) {
                 ray.updateRay(hit, state);
@@ -83,9 +83,8 @@ namespace Tracing {
     __host__ static Pixel rayTraceBVHHost(Ray& ray, const Array<BVH>& bvhs, uint state) {
         Vector<float> incomingLight = Vector<float>();
         Vector<float> rayColor = Vector<float>(1.,1.,1.);
-        for (int bounce=0;bounce<ray.getMaxBounce();bounce++) {
-            Hit hit = Hit();
-            rayTriangleBVHs(ray, bvhs, hit);
+        for (int bounce=0; bounce<ray.getMaxBounce(); bounce++) {
+            Hit hit = rayBVHs(ray, bvhs);
             if (hit.getHasHit()) {
                 ray.updateRay(hit, state);
                 ray.updateLight(hit, &incomingLight, &rayColor);
@@ -105,9 +104,8 @@ namespace Tracing {
     __device__ static Vector<float> rayTraceBVHDevice(uint state, Ray& ray, Array<BVH>& bvhs) {
         Vector<float> incomingLight = Vector<float>();
         Vector<float> rayColor = Vector<float>(1.,1.,1.);
-        for (int bounce=0;bounce<ray.getMaxBounce();bounce++) {
-            Hit hit = Hit();
-            rayTriangleBVHs(ray, bvhs, hit);
+        for (int bounce=0; bounce<ray.getMaxBounce(); bounce++) {
+            Hit hit = rayBVHs(ray, bvhs);
             if (hit.getHasHit()) {
                 ray.updateRay(hit, state);
                 ray.updateLight(hit, &incomingLight, &rayColor);
@@ -127,12 +125,11 @@ namespace Tracing {
 
     __device__ static Vector<float> rasterizeBVHDevice(Ray& ray, Array<BVH> bvhs) {
         Vector<float> incomingLight = Vector<float>();
-        Hit hit = Hit();
-        rayTriangleBVHs(ray, bvhs, hit);
+        Hit hit = rayBVHs(ray, bvhs);
         /*
         while (!hit.getHasHit() || hit.getMaterial().getSpecularProb() > 0) {
             ray.updateRay(hit, 0);
-            rayTriangleBVHs(ray, bvhs, hit);
+            rayBVHs(ray, bvhs, hit);
         }*/
         if (hit.getHasHit()) incomingLight = hit.getMaterial().getColor().toVector();
         return incomingLight;

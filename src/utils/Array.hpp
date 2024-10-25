@@ -5,6 +5,13 @@
 
 #define cudaErrorCheck(call){cudaAssert(call,__FILE__,__LINE__);}
 
+static std::string human_rep(const int num_bytes) {
+    if (num_bytes < 1000) return std::to_string(num_bytes) + " B (" + std::to_string(num_bytes) + " B)";
+    if (num_bytes < 1000 * 1000) return std::to_string((float)num_bytes/1000).substr(0, 5) + " KB (" + std::to_string((float)num_bytes/1024).substr(0, 5) + " KiB)";
+    if (num_bytes < 1000 * 1000 * 1000) return std::to_string((float)num_bytes/(1000*1000)).substr(0, 5) + " MB (" + std::to_string((float)num_bytes/(1024*1024)).substr(0, 5) + " MiB)";
+    return std::to_string((float)num_bytes/(1000*1000*1000)).substr(0, 5) + " GB (" + std::to_string((float)num_bytes/(1024*1024*1024)).substr(0, 5) + " GiB)";;
+}
+
 template<typename T>
 class Array : public CudaReady {
     private:
@@ -12,6 +19,8 @@ class Array : public CudaReady {
         T* data_cpu;
         T* data_gpu = nullptr;
         uint data_size;
+
+    protected:
         uint spaceUsed = 0;
         
     public:
@@ -44,6 +53,10 @@ class Array : public CudaReady {
 
         __host__ __device__ uint size() const {
             return spaceUsed;
+        }
+
+        __host__ void clear() {
+            spaceUsed = 0;
         }
 
         template<typename I>

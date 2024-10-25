@@ -6,7 +6,7 @@
 #include "Triangle.hpp"
 #include "Mesh.hpp"
 
-#include "utils/cuda_ready.hpp"
+#include "utils/CudaReady.hpp"
 
 class BoundingBox {
     private:
@@ -130,9 +130,9 @@ class Node {
         }
 };
 
-class BVH : public CudaReady {
+class BVH : public CudaReady, public SceneObject {
     private:
-        uint maxDepth = 5;
+        uint maxDepth = 7;
     
     public:
         Array<Node> allNodes;
@@ -156,28 +156,22 @@ class BVH : public CudaReady {
             return halfArea * numTriangles;
         }
 
-        __host__ float evaluateSplit(const uint splitAxis, const float splitPos, const uint start, const uint count)
-    {
+        __host__ float evaluateSplit(const uint splitAxis, const float splitPos, const uint start, const uint count) {
         BoundingBox boundsLeft;
         BoundingBox boundsRight;
         uint numOnLeft = 0;
         uint numOnRight = 0;
 
-        for (int i = start; i < start + count; i++)
-        {
+            for (int i = start; i < start + count; i++) {
             Triangle tri = allTriangles[i];
-            if (tri.getBarycenter()[splitAxis] < splitPos)
-            {
+                if (tri.getBarycenter()[splitAxis] < splitPos) {
                 boundsLeft.growToInclude(tri);
                 numOnLeft++;
-            }
-            else
-            {
+                } else {
                 boundsRight.growToInclude(tri);
                 numOnRight++;
             }
         }
-
         float costA = NodeCost(boundsLeft.getSize(), numOnLeft);
         float costB = NodeCost(boundsRight.getSize(), numOnRight);
         return costA + costB;
@@ -266,11 +260,6 @@ class BVH : public CudaReady {
         __host__ void cpu() override {
             allNodes.cpu();
             allTriangles.cpu();
-        }
-
-        __host__ void sync_to_cpu() override {
-            allNodes.sync_to_cpu();
-            allTriangles.sync_to_cpu();
         }
 
         __host__ void free() override {

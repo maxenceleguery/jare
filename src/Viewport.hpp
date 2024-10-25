@@ -4,10 +4,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "Environment.hpp"
 #include "Camera.hpp"
 
 class Viewport {
     private:
+        Environment* env;
         Camera* cam;
 
         SDL_Window* window;
@@ -23,7 +25,7 @@ class Viewport {
         bool isOnBool = true;
 
     public:
-        Viewport(Camera* cam) : cam(cam) {};
+        Viewport(Environment* env) : env(env), cam(env->cam) {};
 
         bool isOn() const {
             return isOnBool;

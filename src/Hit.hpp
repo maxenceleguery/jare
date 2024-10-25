@@ -14,12 +14,13 @@ class Hit {
         float distanceTraveled = 0.;
         float firstDistance = -1.;
         bool hasHit = false;
+        int hit_bvh = -1;
         
     public:
         __host__ __device__ Hit() {};
         __host__ __device__ ~Hit() {};
 
-        __host__ __device__ void update(const Hit& hit) {
+        __host__ __device__ void update(const Hit& hit, const int bvh_index) {
             if (hit.getHasHit() && hit.getDistance() < distance) {
                 if (firstDistance < 0)
                     firstDistance = hit.distance;
@@ -28,6 +29,7 @@ class Hit {
                 setMaterial(hit.mat);
                 setNormal(hit.normal);
                 setPoint(hit.point);
+                hit_bvh = bvh_index;
             }
         }
         
@@ -84,6 +86,14 @@ class Hit {
         
         __host__ __device__ void setHasHit(const bool& h) {
             hasHit = h;
+        }
+
+        __host__ __device__ int getBVHindex() const {
+            return hit_bvh;
+        }
+
+        __host__ __device__ void setBVHindex(const int index) {
+            hit_bvh = index;
         }
 };
 

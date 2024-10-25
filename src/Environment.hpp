@@ -12,6 +12,7 @@
 #include "shaders/Convolve.hpp"
 
 #include "Tracing.hpp"
+#include "Transformations.hpp"
 
 #include "Image.hpp"
 #include "Obj.hpp"
@@ -35,17 +36,18 @@ enum Mode {
 
 class Environment {
     private:
-        Camera* cam;
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 2;
+        uint samplesByThread = 8;
 
         Pixel backgroundColor = Pixel(0,0,0);
         Mode mode = BVH_RAYTRACING;
-        Array<BVH> BVHs = Array<BVH>();
 
     public:
+        Camera* cam;
+        Array<BVH> BVHs = Array<BVH>();
+
         Environment() {
             std::chrono::milliseconds ms = duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()
@@ -77,7 +79,7 @@ class Environment {
             BVHs.cuda();
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<float> elapsed_seconds = end-start;
-            std::cout << "BVHs on device:\t\t" << elapsed_seconds.count() << "s\n";
+            std::cout << "BVHs constructed and on device:\t\t" << elapsed_seconds.count() << "s\n";
         }
 
         void setMode(const Mode m) {
@@ -115,16 +117,6 @@ class Environment {
             std::vector<Vector<float>> normal_vertices = obj.getNormalVertices();
             std::vector<std::vector<Vector<int>>> indexes = obj.getIndexes();
 
-            float angle = 3.14159/2.0;
-            float ux = 1;
-            float uy = 0;
-            float uz = 0;
-            Matrix<float> P = Matrix<float>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
-            Matrix<float> I = Matrix<float>(1.,MATRIX_EYE);
-            Matrix<float> Q = Matrix<float>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
-
-            Matrix<float> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
-
             /*
             The OBJ format can provide multiple vertices for one triangle. We have to convert it in triangles as follow.
             */
@@ -136,24 +128,25 @@ class Environment {
                     Triangle triangle = Triangle(mat);
                     if (v==2) {
                         for (uint j = 0; j<3; j++) { 
-                            triangle.setvertex(j, R*vertices[fi[j].getX()]*scale + offset );
-                            triangle.setNormal(j, R*normal_vertices[fi[j].getZ()] );
+                            triangle.setvertex(j, vertices[fi[j].getX()]);
+                            triangle.setNormal(j, normal_vertices[fi[j].getZ()]);
                         }
                     } else {
-                        triangle.setvertex(0, R*vertices[fi[v-3].getX()]*scale + offset );
-                        triangle.setvertex(1, R*vertices[fi[v-1].getX()]*scale + offset );
-                        triangle.setvertex(2, R*vertices[fi[v  ].getX()]*scale + offset );
+                        triangle.setvertex(0, vertices[fi[v-3].getX()]);
+                        triangle.setvertex(1, vertices[fi[v-1].getX()]);
+                        triangle.setvertex(2, vertices[fi[v  ].getX()]);
 
-                        triangle.setNormal(0, R*normal_vertices[fi[v-3].getZ()] );
-                        triangle.setNormal(1, R*normal_vertices[fi[v-1].getZ()] );
-                        triangle.setNormal(2, R*normal_vertices[fi[v  ].getZ()] );
+                        triangle.setNormal(0, normal_vertices[fi[v-3].getZ()]);
+                        triangle.setNormal(1, normal_vertices[fi[v-1].getZ()]);
+                        triangle.setNormal(2, normal_vertices[fi[v  ].getZ()]);
                     }
                     mesh.push_back(triangle);
                     obj.nbTriangles += 1;
                 }
             }
+            mesh.setTransformMatrix(Transformations::Get_TRS_Matrix(offset, Vector<float>(-90, 0, 0), Vector<float>(1., 1., 1.)*scale));
             meshes.push_back(mesh);
-            std::cout << name.c_str() << " loaded with " << obj.nbTriangles << " triangles and " << obj.failedTriangles << " wrong ones." << std::endl;
+            std::cout << name.c_str() << " loaded with " << obj.nbTriangles << " triangles" << std::endl;
         }        
 
         void render() {
@@ -250,6 +243,17 @@ class Environment {
                 compute_shader(raytrace);
                 //ConvolutionShader denoise = ConvolutionShader({ {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}}, *cam});
                 //compute_shader(denoise);
+
+                /*
+                float Y = 0;
+                for (int i = 0; i<cam->getWidth()*cam->getHeight(); i++) {
+                    Y += cam->getPixel(i).getLuminance();
+                }
+                Y /= cam->getWidth()*cam->getHeight();
+                OperationShader normalize = OperationShader({DIVISION, Y, *cam});
+                compute_shader(normalize);
+                */
+
             } else {
                 RasterizeShader raster = RasterizeShader({BVHs, *cam}, state);
                 compute_shader(raster);

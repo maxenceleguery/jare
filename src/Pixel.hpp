@@ -89,7 +89,28 @@ class Pixel {
         }
 
         __host__ __device__ Vector<float> toVector() const {
-            return Vector<float>(r,g,b)/255.0;
+            return Vector<float>(r,g,b)/255.f;
+        }
+
+        __host__ __device__ static float sRGBtoLin(const float colorChannel) {
+            if (colorChannel <= 0.04045f) {
+                return colorChannel / 12.92f;
+            } else {
+                return std::pow((( colorChannel + 0.055f)/1.055f), 2.4f);
+            }
+        }
+
+        __host__ __device__ float getLuminance() const {
+            return 0.2126f*sRGBtoLin(r/255.f) + 0.7152f*sRGBtoLin(g/255.f) + 0.0722f*sRGBtoLin(b/255.f);
+        }
+
+        __host__ __device__ float getPerceivedLightness() const {
+            const float Y = getLuminance();
+            if (Y <= 216.f/24389.f) {       // The CIE standard states 0.008856 but 216/24389 is the intent for 0.008856451679036
+                return Y * (24389.f/27.f);  // The CIE standard states 903.3, but 24389/27 is the intent, making 903.296296296296296
+            } else {
+                return pow(Y,(1/3)) * 116 - 16;
+            }
         }
 };
 

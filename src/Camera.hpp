@@ -40,6 +40,7 @@ class Camera : public CudaReady {
         uint num_images_rendered = 0;
 
         Array<Pixel> pixels;
+        //Array<Vector<float>> errors;
 
     public:
         bool is_raytrace_enable = false;
@@ -61,27 +62,31 @@ class Camera : public CudaReady {
 
         __host__ void init() {
             pixels = Array<Pixel>(width*height*threadsByRay);
+            //errors = Array<Vector<float>>(width*height*threadsByRay);
         }
 
         __host__ void cuda() override {
             pixels.cuda();
+            //errors.cuda();
         }
 
         __host__ void cpu() override {
             pixels.cpu();
-        }
-
-        __host__ void sync_to_cpu() override {
-            pixels.sync_to_cpu();
+            //errors.cpu();
         }
 
         __host__ void free() override {
             pixels.free();
+            //errors.free();
+        }
+
+        __host__ void reset_progressive_rendering() {
+            num_images_rendered = 0;
         }
 
         __host__ void toggleRaytracing() {
             is_raytrace_enable = !is_raytrace_enable;
-            num_images_rendered = 0;
+            reset_progressive_rendering();
         }
 
         __host__ __device__ uint getWidth() const {
@@ -115,10 +120,6 @@ class Camera : public CudaReady {
             return vectUp*H + vectRight*W;
         }
 
-        __host__ Pixel getPixelCPU(const uint index) const {
-            return pixels.getValueFromCPU(index);
-        }
-
         __host__ __device__ Pixel getPixel(const uint index) const {
             return pixels[index];
         }
@@ -128,8 +129,19 @@ class Camera : public CudaReady {
         }
 
         __host__ __device__ void updatePixel(const uint index, const Pixel& color) {
-            pixels[index] = Pixel((pixels[index].toVector()*num_images_rendered + color.toVector()) / (num_images_rendered+1));
+            /*
+            const Vector<float> y = color.toVector(); //- errors[index];
+            const Vector<float> t = pixels[index].toVector()*num_images_rendered + y;
+            //errors[index] = (t - pixels[index].toVector()*num_images_rendered) - y;
+            pixels[index] = Pixel(t/(num_images_rendered+1));
+
+            //pixels[index] = Pixel((pixels[index].toVector()*num_images_rendered + color.toVector()) / (num_images_rendered+1));
             //pixels[index] = Pixel( (pixels[index].toVector() + color.toVector()) / 2 );
+            */
+
+            const float weight = 1.f / (num_images_rendered + 1);
+            pixels[index] = Pixel( (pixels[index].toVector() * (1 - weight) + color.toVector() * weight).clamp(0.f, 1.f) );
+           
         }
 
         __host__ __device__ CoordsPair indexToCoord(const uint index) const {
@@ -149,9 +161,9 @@ class Camera : public CudaReady {
             position=pos;
         }
 
-        __host__ __device__ void move(const Vector<float>& offset) {
+        __host__ void move(const Vector<float>& offset) {
             position += offset;
-            num_images_rendered = 0;
+            reset_progressive_rendering();
         }
 
         __host__ __device__ Vector<float> getVectFront() const {

@@ -110,7 +110,7 @@ class RandomInterface {
     public:
         __host__ __device__ float randomValue(uint state) {
             #ifdef  __CUDA_ARCH__
-                state *= (clock64() % 10) ^ 156;
+                state *= (threadIdx.x + blockIdx.x * blockDim.x) * (clock64() % 10) ^ 156;
             #else
                 state = rand();
             #endif

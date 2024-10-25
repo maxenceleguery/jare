@@ -259,8 +259,9 @@ class Vector {
             return ((*this)*(1-percentage) + vec2*percentage);
         }
 
-        __host__ __device__ void clamp(const T min, const T max) {
+        __host__ __device__ Vector<T>& clamp(const T min, const T max) {
             *this = (*this).min(Vector<T>(max, max, max));
             *this = (*this).max(Vector<T>(min, min, min));
+            return *this;
         }
 };

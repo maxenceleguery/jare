@@ -51,16 +51,30 @@ class Triangle {
             material = tri.material;
         };
 
-        __host__ __device__ Triangle(Material mat0) {
+        __host__ __device__ Triangle(const Material mat0) {
             material = mat0;
         };
 
-        __host__ __device__ Triangle(Vector<float>& vec0, Material mat0) {
+        __host__ __device__ Triangle(const Vector<float>& vec0, Material mat0) {
             vertex0 = vec0;
             material = mat0;
         };
 
-        __host__ __device__ Triangle(Vector<float>& vec0, Pixel color0) : Triangle(vec0, Material(color0)) {};
+        __host__ __device__ Triangle(const Vector<float>& vec0, const Pixel color0) : Triangle(vec0, Material(color0)) {};
+
+        __host__ __device__ Triangle(const Vector<float>& _vertex0, const Vector<float>& _vertex1, const Vector<float>& _vertex2) : vertex0(_vertex0), vertex1(_vertex1), vertex2(_vertex2) {
+            mini = min();
+            maxi = max();
+        };
+
+        __host__ __device__ Triangle(
+            const Vector<float>& _vertex0, const Vector<float>& _vertex1, const Vector<float>& _vertex2,
+            const Vector<float>& _normal0, const Vector<float>& _normal1, const Vector<float>& _normal2
+        ) : Triangle(_vertex0, _vertex1, _vertex2) {
+            normal0 = _normal0;
+            normal1 = _normal1;
+            normal2 = _normal2;
+        };
 
         __host__ __device__ Vector<float> getMin() const {
             return mini;
@@ -154,15 +168,6 @@ class Triangle {
             normal2.printCoord();
         }
 
-        __host__ __device__ void move(const Vector<float>& vec) {
-            vertex0 += vec;
-            vertex1 += vec;
-            vertex2 += vec;
-
-            mini = min();
-            maxi = max();
-        }
-
         __host__ __device__ Triangle operator=(const Triangle& tri) {
             if (this != &tri) {
                 vertex0 = tri.getVertex(0);
@@ -178,6 +183,75 @@ class Triangle {
                 mini = min();
                 maxi = max();
             }
+            return *this;
+        }
+
+        __host__ __device__ Triangle operator+(const Vector<float>& value) const {
+            Triangle tri = Triangle(
+                vertex0 + value,
+                vertex1 + value,
+                vertex2 + value,
+                normal0,
+                normal1,
+                normal2
+            );
+            tri.material = material;
+            return tri;
+        }
+
+        __host__ __device__ Triangle& operator+=(const Vector<float>& value) {
+            vertex0 += value;
+            vertex1 += value;
+            vertex2 += value;
+
+            mini = min();
+            maxi = max();
+            return *this;
+        }
+
+        __host__ __device__ Triangle operator-(const Vector<float>& value) const {
+            Triangle tri = Triangle(
+                vertex0 - value,
+                vertex1 - value,
+                vertex2 - value,
+                normal0,
+                normal1,
+                normal2
+            );
+            tri.material = material;
+            return tri;
+        }
+
+        __host__ __device__ Triangle& operator-=(const Vector<float>& value) {
+            vertex0 -= value;
+            vertex1 -= value;
+            vertex2 -= value;
+
+            mini = min();
+            maxi = max();
+            return *this;
+        }
+
+        __host__ __device__ Triangle operator*(const float value) const {
+            Triangle tri = Triangle(
+                vertex0 * value,
+                vertex1 * value,
+                vertex2 * value,
+                normal0,
+                normal1,
+                normal2
+            );
+            tri.material = material;
+            return tri;
+        }
+
+        __host__ __device__ Triangle& operator*=(const float value) {
+            vertex0 *= value;
+            vertex1 *= value;
+            vertex2 *= value;
+
+            mini = min();
+            maxi = max();
             return *this;
         }
 };
