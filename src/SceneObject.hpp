@@ -1,76 +1,10 @@
 #pragma once
 
 #include <vector>
-#include "../Vector.hpp"
-#include "../TRSMatrix.hpp"
-#include "./CudaReady.hpp"
-#include "./Array.hpp"
-
-enum Axis {
-    X,
-    Y,
-    Z,
-};
-
-
-static Vector<float> rotateVector(const Vector<float>& vec, const float angle, const Axis axis) {
-    float ux = 0.f;
-    float uy = 0.f;
-    float uz = 0.f;
-    switch (axis) {
-        case X:
-            ux = 1.f;
-            break;
-        case Y:
-            uy = 1.f;
-            break;
-        case Z:
-            uz = 1.f;
-            break;
-    }
-    
-    Matrix<float> P = Matrix<float>(ux*ux,ux*uy,ux*uz,
-                                    ux*uy,uy*uy,uy*uz,
-                                    ux*uz,uy*uz,uz*uz);
-    Matrix<float> I = Matrix<float>(1.f, MATRIX_EYE);
-    Matrix<float> Q = Matrix<float>(0,-uz,uy,
-                                    uz,0,-ux,
-                                    -uy,ux,0);
-
-    Matrix<float> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
-    return R*vec;
-}
-
-static std::vector<Vector<float>> rotateVectors(std::vector<Vector<float>> vecs, const float angle, const Axis axis) {
-    float ux = 0.f;
-    float uy = 0.f;
-    float uz = 0.f;
-    switch (axis) {
-        case X:
-            ux = 1.f;
-            break;
-        case Y:
-            uy = 1.f;
-            break;
-        case Z:
-            uz = 1.f;
-            break;
-    }
-    
-    Matrix<float> P = Matrix<float>(ux*ux,ux*uy,ux*uz,
-                                    ux*uy,uy*uy,uy*uz,
-                                    ux*uz,uy*uz,uz*uz);
-    Matrix<float> I = Matrix<float>(1.f, MATRIX_EYE);
-    Matrix<float> Q = Matrix<float>(0,-uz,uy,
-                                    uz,0,-ux,
-                                    -uy,ux,0);
-
-    Matrix<float> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
-    for (Vector<float>& vec : vecs) {
-        vec = R*vec;
-    }
-    return vecs;
-}
+#include "Vector.hpp"
+#include "TRSMatrix.hpp"
+#include "utils/CudaReady.hpp"
+#include "utils/Array.hpp"
 
 class SceneObject : public CudaReady {
     private:
@@ -97,6 +31,7 @@ class SceneObject : public CudaReady {
                 transforms.push_back(Vector<float>(1, 1, 1)); // Total scale
                 transforms.push_back(Vector<float>(0, 0, 0)); // Total rotation
             }
+            updateTRS();
         }
 
         void setDefaultsTransforms(const Vector<float>& offset, const Vector<float>& scale, const Vector<float>& rotation) {
@@ -109,6 +44,7 @@ class SceneObject : public CudaReady {
                 transforms.push_back(scale); // Total scale
                 transforms.push_back(rotation); // Total rotation
             }
+            updateTRS();
         }
 
         void setDefaultsOrientations() {
@@ -121,6 +57,7 @@ class SceneObject : public CudaReady {
                 orientations.push_back(Vector<float>(0, 1, 0)); // Left
                 orientations.push_back(Vector<float>(0, 0, 1)); // Up
             }
+            updateTRS();
         }
 
         void setDefaultsOrientations(const Vector<float>& front, const Vector<float>& left, const Vector<float>& up) {
@@ -133,6 +70,7 @@ class SceneObject : public CudaReady {
                 orientations.push_back(left); // Left
                 orientations.push_back(up); // Up
             }
+            updateTRS();
         }
 
 

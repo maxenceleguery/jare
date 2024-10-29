@@ -176,9 +176,9 @@ void test_matrix4x4() {
 }
 
 void test_gtkmm() {
-	auto app = Gtk::Application::create();
-	SceneObjectWindow win = SceneObjectWindow();
-	app->run(win);
+	//auto app = Gtk::Application::create();
+	//SceneObjectWindow win = SceneObjectWindow();
+	//app->run(win);
 }
 
 int main() {

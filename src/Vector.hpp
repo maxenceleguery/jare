@@ -50,7 +50,8 @@ class Vector {
             return 3;
         }
 
-        __host__ __device__ T operator[](const uint i) {
+        template<typename I>
+        __host__ __device__ T operator[](const I i) const {
             switch (i) {
                 case 0:
                     return x;

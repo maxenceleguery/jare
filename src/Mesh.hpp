@@ -2,7 +2,7 @@
 
 #include "Triangle.hpp"
 #include "utils/Array.hpp"
-#include "utils/SceneObject.hpp"
+#include "SceneObject.hpp"
 #include "TRSMatrix.hpp"
 #include "Transformations.hpp"
 

@@ -144,6 +144,7 @@ class Environment {
                 }
             }
             mesh.setTransformMatrix(offset, Vector<float>(1., 1., 1.)*scale, rot_angle_deg);
+            mesh.setDefaultsOrientations();
             meshes.push_back(mesh);
             std::cout << name.c_str() << " loaded with " << obj.nbTriangles << " triangles" << std::endl;
         }        

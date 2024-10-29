@@ -4,11 +4,13 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "SceneObjectWindow.hpp"
 #include "Environment.hpp"
 #include "Camera.hpp"
 
 class Viewport {
     private:
+        Glib::RefPtr<Gtk::Application> window_runner;
         Environment* env;
         Camera* cam;
 
@@ -26,6 +28,12 @@ class Viewport {
 
     public:
         Viewport(Environment* env) : env(env), cam(env->cam) {};
+
+        void run_window(SceneObject obj) {
+            window_runner = Gtk::Application::create();
+            SceneObjectWindow scene(&obj);
+            window_runner->run(scene);
+        }
 
         bool isOn() const {
             return isOnBool;
@@ -148,6 +156,10 @@ class Viewport {
                                 viewport->cam->reset_progressive_rendering();
                                 break;
 
+                            case SDLK_c:
+                                viewport->run_window(*(viewport->cam));
+                                break;
+
                             default:
                                 break;
                         }
@@ -164,7 +176,8 @@ class Viewport {
                             std::cout << "Clic :" << index << " " << e.button.x << " " << e.button.y << std::endl;
 
                             BVH bvh = viewport->env->BVHs[index];
-                            bvh.addRelativeRotation(Vector<float>(0, 1, 0));
+                            viewport->run_window(bvh);
+                            //bvh.addRelativeRotation(Vector<float>(0, 1, 0));
                             bvh.cuda();
                             viewport->cam->reset_progressive_rendering();
                         }
