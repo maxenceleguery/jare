@@ -10,9 +10,10 @@
 #include "shaders/RayTrace.hpp"
 #include "shaders/Aggreg.hpp"
 #include "shaders/Convolve.hpp"
+#include "shaders/Operation.hpp"
 
 #include "Tracing.hpp"
-#include "Transformations.hpp"
+#include "TRSMatrix.hpp"
 
 #include "Image.hpp"
 #include "Obj.hpp"
@@ -39,7 +40,7 @@ class Environment {
         Meshes meshes;
         uint samples = 5;
 
-        uint samplesByThread = 8;
+        uint samplesByThread = 2;
 
         Pixel backgroundColor = Pixel(0,0,0);
         Mode mode = BVH_RAYTRACING;
@@ -91,13 +92,11 @@ class Environment {
         }
 
         void addSquare(Vector<float> v1, Vector<float> v2, Vector<float> v3, Vector<float> v4, Material mat) {
-            Triangle triangle = Triangle(v1,mat);
-            triangle.setvertex(1, v2);
-            triangle.setvertex(2, v4);
+            Triangle triangle = Triangle(v1, v2, v4);
+            triangle.setMaterial(mat);
 
-            Triangle triangleBis = Triangle(v2,mat);
-            triangleBis.setvertex(1, v3);
-            triangleBis.setvertex(2, v4);
+            Triangle triangleBis = Triangle(v2, v3, v4);
+            triangleBis.setMaterial(mat);
 
             Mesh mesh = Mesh(triangle);
             mesh.push_back(triangleBis);
@@ -108,7 +107,7 @@ class Environment {
             addSquare(v1, v2, v3, v4, Material(color));
         }
 
-        void addObj(const std::string name, const Vector<float>& offset, const float scale, const Material mat) {
+        void addObj(const std::string name, const Vector<float>& offset, const float scale, const Vector<float>& rot_angle_deg, const Material mat) {
             std::cout << "Loading " << name.c_str() << std::endl;
             Obj obj = Obj(name);
             //obj.print();
@@ -144,7 +143,7 @@ class Environment {
                     obj.nbTriangles += 1;
                 }
             }
-            mesh.setTransformMatrix(Transformations::Get_TRS_Matrix(offset, Vector<float>(-90, 0, 0), Vector<float>(1., 1., 1.)*scale));
+            mesh.setTransformMatrix(offset, Vector<float>(1., 1., 1.)*scale, rot_angle_deg);
             meshes.push_back(mesh);
             std::cout << name.c_str() << " loaded with " << obj.nbTriangles << " triangles" << std::endl;
         }        
@@ -174,8 +173,7 @@ class Environment {
                     Vector<float> colorVec;
                     
                     if (mode==SIMPLE_RENDER) {
-                        Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w,h)).normalize();
-                        Ray ray = Ray(cam->getPosition(),direction);
+                        Ray ray = cam->generate_ray(w,h);
 
                         color = Tracing::simpleRayTraceHost(ray, meshes, backgroundColor);
                     }
@@ -189,8 +187,7 @@ class Environment {
                         do {
                             float dx=-(samplesSqrt-1)/2.f;
                             do {
-                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.f*samplesSqrt),h+dy/(1.f*samplesSqrt))).normalize();
-                                Ray ray = Ray(cam->getPosition(),direction);
+                                Ray ray = cam->generate_ray(w+dx/(1.f*samplesSqrt),h+dy/(1.f*samplesSqrt));
                                 
                                 vectTmp = (Tracing::rayTraceHost(ray, meshes, idx)).toVector();
 
@@ -212,8 +209,7 @@ class Environment {
                         do {
                             float dx=-(samplesSqrt-1)/2.;
                             do {
-                                Vector<float> direction = (cam->getVectFront()*cam->getFov()+cam->getPixelCoordOnCapt(w+dx/(1.f*samplesSqrt),h+dy/(1.f*samplesSqrt))).normalize();
-                                Ray ray = Ray(cam->getPosition(),direction);
+                                Ray ray = cam->generate_ray(w+dx/(1.f*samplesSqrt),h+dy/(1.f*samplesSqrt));
 
                                 vectTmp = (Tracing::rayTraceBVHHost(ray, BVHs, idx)).toVector();
 

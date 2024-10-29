@@ -21,12 +21,12 @@ class Vector {
             const float threehalfs = 1.5F;
 
             x2 = number*0.5F;
-            y0=number;
+            y0 = number;
             memcpy(&i, &y0, 4); // i=*(long*) &y0; //evil floating point bit hack
             i = 0x5f3759df - (i >> 1); //what the fuck ?
             memcpy(&y0, &i, 4); // y0=*(float*) &i;
-            y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method
-            y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method again
+            y0 = y0*(threehalfs - (x2*y0*y0)); // Newton's method
+            y0 = y0*(threehalfs - (x2*y0*y0)); // Newton's method again
             return y0;
         }
         
@@ -64,6 +64,8 @@ class Vector {
         }
 
         __host__ void printCoord() const {
+            std::cout << std::fixed;
+            std::cout.precision(2);
             std::cout << "("
                         << x
                         << ";"

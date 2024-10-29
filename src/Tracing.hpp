@@ -1,13 +1,35 @@
 #pragma once
 
 #include "Ray.hpp"
+#include "utils/Logger.hpp"
 
 namespace Tracing {
 
-    __host__ __device__ static void rayTriangleBVHs(Ray& ray, const Array<BVH>& bvhs, Hit& hit) {
-        for (int i = 0; i<bvhs.size(); i++) {
-            ray.rayTriangleBVH(bvhs[i], 0, 0, hit);
+    __host__ __device__ static Hit rayBVHs(const Ray world_ray, const Array<BVH>& bvhs) {
+        Hit result;
+        for (int bvh_index = 0; bvh_index<bvhs.size(); bvh_index++) {
+            Ray local_ray = world_ray;
+            const Matrix4x4 mat = bvhs[bvh_index].getWorldToLocalMatrix();
+
+            Vector<float> new_point = mat*Vector4<float>(world_ray.getPoint(), 1).toVector();
+            Vector<float> new_direction = mat*Vector4<float>(world_ray.getDirection(), 0).toVector();
+            local_ray.setPoint(new_point);
+            local_ray.setDirection(new_direction);
+
+            Hit tmp_hit = local_ray.rayTriangleBVH(bvh_index, bvhs[bvh_index], 0, 0);
+
+            if (tmp_hit.getDistance() < result.getDistance()) {
+                //result.update(tmp_hit, i);
+                result.setHasHit(true);
+                result.setBVHindex(bvh_index);
+                result.setDistance(tmp_hit.getDistance());
+                result.setMaterial(tmp_hit.getMaterial());
+                result.setPoint(world_ray.getPoint() + world_ray.getDirection()*tmp_hit.getDistance());
+                //result.setNormal(tmp_hit.getNormal());
+                result.setNormal((bvhs[bvh_index].getLocalToWorldMatrix()*Vector4<float>(tmp_hit.getNormal(), 0)).toVector());
+            }
         }
+        return result;
     }
 
     __host__ static Hit simpleTraceHost(Ray& ray, const Meshes& meshes) {

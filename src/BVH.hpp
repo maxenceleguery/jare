@@ -130,26 +130,26 @@ class Node {
         }
 };
 
-class BVH : public CudaReady, public SceneObject {
+class BVH : public Mesh {
     private:
         uint maxDepth = 7;
     
     public:
         Array<Node> allNodes;
-        Mesh allTriangles;
+        //Mesh allTriangles;
     
-        __host__ BVH() {}; 
-        __host__ BVH(const Mesh mesh) : allTriangles(mesh) {
+        __host__ BVH() : Mesh() {}; 
+        __host__ BVH(const Mesh mesh) : Mesh(mesh) {
             BoundingBox bounds;
-            bounds.growToInclude(mesh);
+            bounds.growToInclude(*this);
 
             allNodes.push_back(Node(bounds));
-            split(0, 0, allTriangles.size(), 0);
+            split(0, 0, size(), 0);
         };
 
-         __host__ BVH(const Mesh mesh, const uint _maxDepth) : BVH(mesh) {
+        __host__ BVH(const Mesh mesh, const uint _maxDepth) : BVH(mesh) {
             maxDepth = _maxDepth;
-         };
+        };
 
         __host__ static float NodeCost(const Vector<float>& size, const int numTriangles) {
             float halfArea = size.getX() * size.getY() + size.getX() * size.getZ() + size.getY() * size.getZ();
@@ -157,25 +157,25 @@ class BVH : public CudaReady, public SceneObject {
         }
 
         __host__ float evaluateSplit(const uint splitAxis, const float splitPos, const uint start, const uint count) {
-        BoundingBox boundsLeft;
-        BoundingBox boundsRight;
-        uint numOnLeft = 0;
-        uint numOnRight = 0;
+            BoundingBox boundsLeft;
+            BoundingBox boundsRight;
+            uint numOnLeft = 0;
+            uint numOnRight = 0;
 
             for (int i = start; i < start + count; i++) {
-            Triangle tri = allTriangles[i];
+                Triangle tri = (*this)[i];
                 if (tri.getBarycenter()[splitAxis] < splitPos) {
-                boundsLeft.growToInclude(tri);
-                numOnLeft++;
+                    boundsLeft.growToInclude(tri);
+                    numOnLeft++;
                 } else {
-                boundsRight.growToInclude(tri);
-                numOnRight++;
+                    boundsRight.growToInclude(tri);
+                    numOnRight++;
+                }
             }
+            float costA = NodeCost(boundsLeft.getSize(), numOnLeft);
+            float costB = NodeCost(boundsRight.getSize(), numOnRight);
+            return costA + costB;
         }
-        float costA = NodeCost(boundsLeft.getSize(), numOnLeft);
-        float costB = NodeCost(boundsRight.getSize(), numOnRight);
-        return costA + costB;
-    }
 
         __host__ std::tuple<uint, float, float> chooseSplit(const Node& node, const uint start, const uint count) {
             if (count <= 1) return std::make_tuple<uint, float, float>(0, 0, INFINITY);
@@ -219,13 +219,13 @@ class BVH : public CudaReady, public SceneObject {
                 uint numOnLeft = 0;
 
                 for (int i = triGlobalStart; i < triGlobalStart + triNum; i++) {
-                    const Triangle tri = allTriangles[i];
+                    const Triangle tri = (*this)[i];
                     if (tri.getBarycenter()[splitAxis] < splitPos) {
                         childA.addToBoundingBox(tri);
 
-                        const Triangle swap = allTriangles[triGlobalStart + numOnLeft];
-                        allTriangles[triGlobalStart + numOnLeft] = tri;
-                        allTriangles[i] = swap;
+                        const Triangle swap = (*this)[triGlobalStart + numOnLeft];
+                        (*this)[triGlobalStart + numOnLeft] = tri;
+                        (*this)[i] = swap;
                         numOnLeft++;
 
                     } else {
@@ -254,17 +254,17 @@ class BVH : public CudaReady, public SceneObject {
 
         __host__ void cuda() override {
             allNodes.cuda();
-            allTriangles.cuda();
+            Mesh::cuda();
         }
 
         __host__ void cpu() override {
             allNodes.cpu();
-            allTriangles.cpu();
+            Mesh::cpu();
         }
 
         __host__ void free() override {
             allNodes.free();
-            allTriangles.free();
+            Mesh::free();
         }
 };
 

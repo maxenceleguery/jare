@@ -10,21 +10,19 @@
 
 template<typename T>
 class Vector4 {
-
     private:
-
         __host__ __device__ float fast_inverse_square_root(float number) const {
             uint32_t i;
             float x2, y0;
             const float threehalfs = 1.5F;
 
             x2 = number*0.5F;
-            y0=number;
+            y0 = number;
             memcpy(&i, &y0, 4); // i=*(long*) &y0; //evil floating point bit hack
             i = 0x5f3759df - (i >> 1); //what the fuck ?
             memcpy(&y0, &i, 4); // y0=*(float*) &i;
-            y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method
-            y0=y0*(threehalfs - (x2*y0*y0)); // Newton's method again
+            y0 = y0*(threehalfs - (x2*y0*y0)); // Newton's method
+            y0 = y0*(threehalfs - (x2*y0*y0)); // Newton's method again
             return y0;
         }
         
@@ -66,6 +64,8 @@ class Vector4 {
         }
 
         __host__ void printCoord() const {
+            std::cout << std::fixed;
+            std::cout.precision(2);
             std::cout << "("
                         << v1
                         << ";"
@@ -79,7 +79,7 @@ class Vector4 {
         }
 
         __host__ __device__ void printCoordDevice() const {
-            printf("(%f, %f, %f, %f)\n", v1, v2, v3, v4);
+            printf("(%f, %f, %f, %f)\n", (double)v1, (double)v2, (double)v3, (double)v4);
         }
 
         __host__ __device__ Vector4<T> invCoords() const {

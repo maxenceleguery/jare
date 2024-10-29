@@ -5,6 +5,7 @@
 #include "Matrix.hpp"
 #include "Ray.hpp"
 #include "utils/Array.hpp"
+#include "utils/CudaReady.hpp"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -21,13 +22,10 @@ struct CoordsPair {
     uint height;
 };
 
-class Camera : public CudaReady {
+class Camera : public SceneObject {
     private:
-        Vector<float> position;
-
-        Vector<float> vectFront;
-        Vector<float> vectUp;
-        Vector<float> vectRight;
+        Vector<float> pos_tmp;
+        Vector<float> front_tmp = Vector<float>(1, 0, 0);
 
         uint width;
         uint height;
@@ -47,14 +45,15 @@ class Camera : public CudaReady {
         uint threadsByRay = 1;
 
         __host__ Camera() {};
-        __host__ Camera(Vector<float> pos, uint width0, uint height0) : position(pos), vectFront(Vector<float>(0,1,0)), vectUp(Vector<float>(0,0,1)), vectRight(Vector<float>(1,0,0).crossProduct(Vector<float>(0,0,1)).normalize()), width(width0), height(height0) {
+        __host__ Camera(Vector<float> pos, uint width0, uint height0) : width(width0), height(height0) {
+            pos_tmp = pos;
+
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
         };
-        __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0)
-            : position(pos), vectFront(front.normalize()),
-            vectUp(Vector<float>(0,0,1)), vectRight(front.crossProduct(Vector<float>(0,0,1)).normalize()),
-            width(width0), height(height0) {
+        __host__ Camera(Vector<float> pos, Vector<float> front, uint width0, uint height0) : width(width0), height(height0) {
+            pos_tmp = pos;
+            front_tmp = front;
 
             capteurWidth = (0.005*width0)/(1.*height0);
             capteurHeight = 0.005;
@@ -63,21 +62,26 @@ class Camera : public CudaReady {
         __host__ void init() {
             pixels = Array<Pixel>(width*height*threadsByRay);
             //errors = Array<Vector<float>>(width*height*threadsByRay);
+            setDefaultsTransforms(pos_tmp, Vector<float>(1, 1, 1), Vector<float>());
+            setDefaultsOrientations(front_tmp.normalize(), Vector<float>(0,0,1).crossProduct(front_tmp).normalize(), Vector<float>(0,0,1));
         }
 
         __host__ void cuda() override {
             pixels.cuda();
             //errors.cuda();
+            SceneObject::cuda();
         }
 
         __host__ void cpu() override {
             pixels.cpu();
             //errors.cpu();
+            SceneObject::cpu();
         }
 
         __host__ void free() override {
             pixels.free();
             //errors.free();
+            SceneObject::free();
         }
 
         __host__ void reset_progressive_rendering() {
@@ -117,7 +121,12 @@ class Camera : public CudaReady {
         __host__ __device__ Vector<float> getPixelCoordOnCapt(const float w, const float h) const {
             const float W = (1.f*w - width/2.f)*(1.f*capteurWidth/width);
             const float H = (-1.f*h + height/2.f)*(1.f*capteurHeight/height);
-            return vectUp*H + vectRight*W;
+            return orientations[2]*H + -orientations[1]*W;
+        }
+
+        __host__ __device__ Ray generate_ray(const uint w, const uint h) const {
+            const Vector<float> pos = getPixelCoordOnCapt(w,h);
+            return Ray(transforms[0], orientations[0]*fov+pos);
         }
 
         __host__ __device__ Pixel getPixel(const uint index) const {
@@ -154,63 +163,64 @@ class Camera : public CudaReady {
         }
 
         __host__ __device__ Vector<float> getPosition() const {
-            return position;
+            return transforms[0];
         }
 
         __host__ __device__ void setPosition(const Vector<float>& pos) {
-            position=pos;
-        }
-
-        __host__ void move(const Vector<float>& offset) {
-            position += offset;
-            reset_progressive_rendering();
-        }
-
-        __host__ __device__ Vector<float> getVectFront() const {
-            return vectFront;
-        }
-
-        __host__ __device__ void setVectFront(Vector<float>& ori) {
-            vectFront=ori;
+            transforms[0]=pos;
         }
 
         __host__ __device__ float getFov() const {
             return fov;
         }
 
-        __host__ __device__ void rotate(const float angle, const uint axis) {
-            Vector<float> direction;
-            switch (axis) {
-            case ROT_FRONT:
-                direction=vectFront.normalize();
-                break;
-            case ROT_RIGHT:
-                direction=vectRight.normalize();
-                break;
-            case ROT_UP:
-                direction=vectUp.normalize();
-                break;
-            
-            default:
-                //std::cout << "Wrong axis provided" << std::endl;
-                return;
-            }
-            float ux = direction.getX();
-            float uy = direction.getY();
-            float uz = direction.getZ();
-            Matrix<float> P = Matrix<float>(ux*ux,ux*uy,ux*uz,ux*uy,uy*uy,uy*uz,ux*uz,uy*uz,uz*uz);
-            Matrix<float> I = Matrix<float>(1.,MATRIX_EYE);
-            Matrix<float> Q = Matrix<float>(0,-uz,uy,uz,0,-ux,-uy,ux,0);
-
-            Matrix<float> R = P + (I-P)*std::cos(angle) + Q*std::sin(angle);
-            vectFront=(R*vectFront).normalize();
-            vectRight=(R*vectRight).normalize();
-            vectUp=(R*vectUp).normalize();
+        /*
+        __host__ void offset(const Vector<float>& offset) {
+            transforms[0] += orientations[0]*offset.getX() + -orientations[1]*offset.getY() + orientations[2]*offset.getZ();
+            reset_progressive_rendering();
         }
 
-        __host__ __device__ Ray generate_ray(const uint w, const uint h) const {
-            return Ray(position, (vectFront*fov+getPixelCoordOnCapt(w,h)).normalize());
+        __host__ void scale(const Vector<float>& scale) {
+            return;
         }
+        __host__ void rotate(const Vector<float>& angleDeg) {
+            const Matrix4x4 mat_basis_change = Matrix4x4(
+                Vector4<float>(-orientations[1], 0),
+                Vector4<float>(orientations[0], 0),
+                Vector4<float>(orientations[2], 0),
+                Vector4<float>()
+            ).transpose();
+            const Matrix4x4 mat = Transformations::GetRotationMatrix(mat_basis_change*angleDeg);
+            orientations[0] = (mat*orientations[0]).normalize();
+            -orientations[1] = (mat*-orientations[1]).normalize();
+            orientations[2] = (mat*orientations[2]).normalize();
+
+            reset_progressive_rendering();
+        }
+
+        __host__ void addOffset(const Vector<float>& offset) {
+            transforms[0] += orientations[0]*offset.getX() + -orientations[1]*offset.getY() + orientations[2]*offset.getZ();
+            transforms[0] += orientations[0]*offset.getX() + -orientations[1]*offset.getY() + orientations[2]*offset.getZ();
+            reset_progressive_rendering();
+        }
+
+        __host__ void addScale(const Vector<float>& scale) {
+            return;
+        }
+        __host__ void addRotate(const Vector<float>& angleDeg) {
+            const Matrix4x4 mat_basis_change = Matrix4x4(
+                Vector4<float>(-orientations[1], 0),
+                Vector4<float>(orientations[0], 0),
+                Vector4<float>(orientations[2], 0),
+                Vector4<float>()
+            ).transpose();
+            const Matrix4x4 mat = Transformations::GetRotationMatrix(mat_basis_change*angleDeg);
+            orientations[0] = (mat*orientations[0]).normalize();
+            -orientations[1] = (mat*-orientations[1]).normalize();
+            orientations[2] = (mat*orientations[2]).normalize();
+
+            reset_progressive_rendering();
+        }*/
 
         __host__ void write_png_file(const char* filename, uint8_t* image_data) {
             FILE *fp = fopen(filename, "wb");

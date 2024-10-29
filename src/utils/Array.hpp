@@ -1,7 +1,13 @@
 #pragma once
 
 #include <type_traits>
-#include "cuda_ready.hpp"
+#include "CudaReady.hpp"
+
+#ifdef __CUDA_ARCH__
+#define DATA data_gpu
+#else
+#define DATA data_cpu
+#endif
 
 #define cudaErrorCheck(call){cudaAssert(call,__FILE__,__LINE__);}
 
@@ -15,7 +21,6 @@ static std::string human_rep(const int num_bytes) {
 template<typename T>
 class Array : public CudaReady {
     private:
-        T* data;
         T* data_cpu;
         T* data_gpu = nullptr;
         uint data_size;
@@ -24,11 +29,10 @@ class Array : public CudaReady {
         uint spaceUsed = 0;
         
     public:
-        __host__ __device__ Array() : data(nullptr), data_cpu(nullptr), data_size(0) {};
+        __host__ __device__ Array() : data_cpu(nullptr), data_size(0) {};
 
         __host__ Array(const uint data_size) : data_size(data_size) {
             data_cpu = new T[data_size];
-            data = data_cpu;
         };
 
         __host__ Array(const T& item) : Array(1) {
@@ -40,14 +44,13 @@ class Array : public CudaReady {
                 data_size++;
                 T* tri_tmp = new T[data_size];
                 for (uint i = 0; i < spaceUsed; i++) {
-                    tri_tmp[i] = data[i];
+                    tri_tmp[i] = data_cpu[i];
                 }
-                if (data != nullptr)
-                    delete[] data;
-                data = tri_tmp;
+                if (data_cpu != nullptr)
+                    delete[] data_cpu;
+                data_cpu = tri_tmp;
             }
-            data[spaceUsed++] = item;
-            data_cpu = data;
+            data_cpu[spaceUsed++] = item;
             return spaceUsed-1;
         }
 
@@ -61,83 +64,66 @@ class Array : public CudaReady {
 
         template<typename I>
         __host__ __device__ T operator[](const I i) const {
-            //printf("%d, %u, %d\n", spaceUsed + i, spaceUsed, i);
             if constexpr (std::is_signed_v<I>) {
                 if (i < 0)
-                    return data[(int)spaceUsed + i];
+                    return DATA[(int)spaceUsed + i];
             }
-            return data[i];
+            return DATA[i];
         }
 
         template<typename I>
-        __host__ __device__ T& operator[](const I i) {
-            //printf("%d, %u, %d\n", spaceUsed + i, spaceUsed, i);
+        __host__ __device__ T& operator[](const I i) {            
             if constexpr (std::is_signed_v<I>) {
                 if (i < 0)
-                    return data[(int)spaceUsed + i];
+                    return DATA[(int)spaceUsed + i];
             }
-            return data[i];
-        }
-
-        template<typename I>
-        __host__ __device__ T getValueFromCPU(const I i) const {
-            if constexpr (std::is_signed_v<I>) {
-                if (i < 0)
-                    return data_cpu[(int)spaceUsed + i];
-            }
-            return data_cpu[i];
+            return DATA[i];
         }
         
         __host__ void cuda() override {
+            if (data_size == 0) return;
+
             if constexpr (std::is_base_of<CudaReady, T>::value) {
                 for (uint i=0; i<size(); i++) {
-                    data[i].cuda();
+                    data_cpu[i].cuda();
                 }
             }
             if (data_gpu == nullptr) {
-                //std::cout << "Allocating : " << data_size*sizeof(T) << " bytes" << std::endl;
-                cudaErrorCheck(cudaMalloc(&data_gpu, data_size*sizeof(T)));
-                cudaErrorCheck(cudaMemcpy(data_gpu, data_cpu, data_size*sizeof(T), cudaMemcpyHostToDevice));
+                std::cout << "Allocating : " << human_rep(data_size*sizeof(T)) << std::endl;
+                //allocated_cuda_memory += data_size*sizeof(T);
+                cudaErrorCheck(cudaMalloc(&data_gpu, data_size*sizeof(T)));    
             }
-            data = data_gpu;
+            cudaErrorCheck(cudaMemcpy(data_gpu, data_cpu, data_size*sizeof(T), cudaMemcpyHostToDevice));
         }
 
         __host__ void cpu() override {
+            if (data_size == 0) return;
+
             if (data_gpu != nullptr) {
                 cudaErrorCheck(cudaMemcpy(data_cpu, data_gpu, data_size*sizeof(T), cudaMemcpyDeviceToHost));
             }
-            data = data_cpu;
             if constexpr (std::is_base_of<CudaReady, T>::value) {
                 for (uint i=0; i<size(); i++) {
-                    data[i].cpu();
-                }
-            }
-        }
-
-        __host__ void sync_to_cpu() override {
-            if (data_cpu != nullptr && data_gpu != nullptr) {
-                cudaErrorCheck(cudaMemcpy(data_cpu, data_gpu, data_size*sizeof(T), cudaMemcpyDeviceToHost));
-            }
-            if constexpr (std::is_base_of<CudaReady, T>::value) {
-                for (uint i=0; i<size(); i++) {
-                    data[i].sync_to_cpu();
+                    data_cpu[i].cpu();
                 }
             }
         }
 
         __host__ void free() override {
+            if (data_size == 0) return;
+            
             if constexpr (std::is_base_of<CudaReady, T>::value) {
                 for (uint i=0; i<size(); i++) {
-                    data[i].free();
+                    data_cpu[i].free();
                 }
             }
-            if (data != nullptr) {
-                delete[] data;
-                data = nullptr;
+            if (data_cpu != nullptr) {
+                delete[] data_cpu;
                 data_cpu = nullptr;
             }
             if (data_gpu != nullptr) {
                 cudaErrorCheck(cudaFree(data_gpu));
+                //allocated_cuda_memory -= data_size*sizeof(T);
                 data_gpu = nullptr;
             }
         }

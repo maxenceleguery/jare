@@ -107,12 +107,15 @@ class Ray : public Line {
             stack[stackIndex++] = nodeOffset + 0;
 
             while (stackIndex > 0) {
+                if (stackIndex >= 128) {
+                    printf("Stack overflow : %d/127", stackIndex);
+                }
                 const Node node = bvh.allNodes[stack[--stackIndex]];
                 const bool isLeaf = node.getTriangleCount() > 0;
 
                 if (isLeaf) {
                     for (int j=0; j<node.getTriangleCount(); j++) {
-                        Hit hit_tmp = rayTriangle(bvh.allTriangles[triOffset + node.getTriangleIndex() + j]);
+                        Hit hit_tmp = rayTriangle(bvh[triOffset + node.getTriangleIndex() + j]);
                         finalHit.update(hit_tmp, bvh_index);
                     }
                 } else {

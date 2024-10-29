@@ -107,16 +107,12 @@ class Matrix4x4 {
         }
 
         __host__ __device__ Matrix4x4 inverse() const {
-            // Calculate the determinant
-            float deter = det();
-
-            // Check if the determinant is zero (matrix is not invertible)
+            const float deter = det();
             if (deter == 0) {
-                // Handle the non-invertible matrix case (e.g., throw an exception or return an identity matrix)
-                return Matrix4x4(); // Returning a default (identity) matrix for simplicity
+                return Matrix4x4();
             }
 
-            float invDet = 1.0f / deter;
+            const float invDet = 1.0f / deter;
 
             // Calculate the inverse matrix using the adjugate method
             Matrix4x4 inverseMat(
@@ -182,6 +178,13 @@ class Matrix4x4 {
             line2.printCoord();
             line3.printCoord();
             line4.printCoord();
+        }
+
+        __device__ void printGPU() const {
+            line1.printCoordDevice();
+            line2.printCoordDevice();
+            line3.printCoordDevice();
+            line4.printCoordDevice();
         }
 };
 

@@ -31,26 +31,26 @@ namespace Transformations {
 
         Matrix4x4 rotationX = Matrix4x4(
             Vector4<float>(1, 0, 0, 0), 
-            Vector4<float>(0, std::cos(anglesRad[0]), std::sin(anglesRad[0]), 0), 
-            Vector4<float>(0, -std::sin(anglesRad[0]), std::cos(anglesRad[0]), 0),
+            Vector4<float>(0, std::cos(anglesRad[0]), -std::sin(anglesRad[0]), 0), 
+            Vector4<float>(0, std::sin(anglesRad[0]), std::cos(anglesRad[0]), 0),
             Vector4<float>(0, 0, 0, 1)
         );
 
         Matrix4x4 rotationY = Matrix4x4(
-            Vector4<float>(std::cos(anglesRad[1]), 0, -std::sin(anglesRad[1]), 0),
+            Vector4<float>(std::cos(anglesRad[1]), 0, std::sin(anglesRad[1]), 0),
             Vector4<float>(0, 1, 0, 0),
-            Vector4<float>(std::sin(anglesRad[1]), 0, std::cos(anglesRad[1]), 0),
+            Vector4<float>(-std::sin(anglesRad[1]), 0, std::cos(anglesRad[1]), 0),
             Vector4<float>(0, 0, 0, 1)
         );
 
         Matrix4x4 rotationZ = Matrix4x4(
-            Vector4<float>(std::cos(anglesRad[2]), std::sin(anglesRad[2]), 0, 0),
-            Vector4<float>(-std::sin(anglesRad[2]), std::cos(anglesRad[2]), 0, 0),
+            Vector4<float>(std::cos(anglesRad[2]), -std::sin(anglesRad[2]), 0, 0),
+            Vector4<float>(std::sin(anglesRad[2]), std::cos(anglesRad[2]), 0, 0),
             Vector4<float>(0, 0, 1, 0),
             Vector4<float>(0, 0, 0, 1)
         );
 
-        return rotationX * rotationY * rotationZ;
+        return rotationZ * rotationY * rotationX;
     }
 
     static Matrix4x4 GetRotationMatrix(const Quaternion& q) {

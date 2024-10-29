@@ -58,12 +58,12 @@ class Viewport {
             uint height = cam->getHeight();
             SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 24, 0, 0, 0, 0);
             unsigned char* surface_pixels = (unsigned char*)surface -> pixels;
-            cam->sync_to_cpu();
+            cam->cpu();
             for(uint h = 0; h < height; ++h) {
                 for(uint w = 0; w < width; ++w) {
-                    surface_pixels[3 * (h * surface->w + w) + 0] = cam->getPixelCPU(h*width+w).getB();
-                    surface_pixels[3 * (h * surface->w + w) + 1] = cam->getPixelCPU(h*width+w).getG();
-                    surface_pixels[3 * (h * surface->w + w) + 2] = cam->getPixelCPU(h*width+w).getR();
+                    surface_pixels[3 * (h * surface->w + w) + 0] = cam->getPixel(h*width+w).getB();
+                    surface_pixels[3 * (h * surface->w + w) + 1] = cam->getPixel(h*width+w).getG();
+                    surface_pixels[3 * (h * surface->w + w) + 2] = cam->getPixel(h*width+w).getR();
                 }
             }
             SDL_DestroyTexture(texture);
@@ -92,30 +92,81 @@ class Viewport {
 
                     if (e.type == SDL_KEYDOWN) {
                         switch (e.key.keysym.sym) {
+                            // Cam translation
                             case SDLK_UP:
-                                viewport->cam->move(Vector<float>(0.1, 0., 0.));
+                                viewport->cam->addRelativeOffset(Vector<float>(0.1, 0., 0.));
+                                viewport->cam->reset_progressive_rendering();
                                 break;
                             case SDLK_DOWN:
-                                viewport->cam->move(Vector<float>(-0.1, 0., 0.));
+                                viewport->cam->addRelativeOffset(Vector<float>(-0.1, 0., 0.));
+                                viewport->cam->reset_progressive_rendering();
                                 break;
                             case SDLK_LEFT:
-                                viewport->cam->move(Vector<float>(0., 0.1, 0.));
+                                viewport->cam->addRelativeOffset(Vector<float>(0., 0.1, 0.));
+                                viewport->cam->reset_progressive_rendering();
                                 break;
                             case SDLK_RIGHT:
-                                viewport->cam->move(Vector<float>(0., -0.1, 0.));
+                                viewport->cam->addRelativeOffset(Vector<float>(0., -0.1, 0.));
+                                viewport->cam->reset_progressive_rendering();
                                 break;
                             case SDLK_SPACE:
-                                viewport->cam->move(Vector<float>(0., 0., 0.1));
+                                viewport->cam->addRelativeOffset(Vector<float>(0., 0., 0.1));
+                                viewport->cam->reset_progressive_rendering();
                                 break;
                             case SDLK_LSHIFT:
-                                viewport->cam->move(Vector<float>(0., 0., -0.1));
+                                viewport->cam->addRelativeOffset(Vector<float>(0., 0., -0.1));
+                                viewport->cam->reset_progressive_rendering();
                                 break;
                             case SDLK_r:
                                 viewport->cam->toggleRaytracing();
                                 SDL_Delay(50);
                                 break;
+                            
+                            // Cam rotation
+                            case SDLK_z:
+                                viewport->cam->addRelativeRotation(Vector<float>(0, -1, 0));
+                                viewport->cam->reset_progressive_rendering();
+                                break;
+                            case SDLK_s:
+                                viewport->cam->addRelativeRotation(Vector<float>(0, 1, 0));
+                                viewport->cam->reset_progressive_rendering();
+                                break;
+                            case SDLK_a:
+                                viewport->cam->addRelativeRotation(Vector<float>(1, 0, 0));
+                                viewport->cam->reset_progressive_rendering();
+                                break;    
+                            case SDLK_e:
+                                viewport->cam->addRelativeRotation(Vector<float>(-1, 0, 0));
+                                viewport->cam->reset_progressive_rendering();
+                                break;  
+                            case SDLK_q:
+                                viewport->cam->addRelativeRotation(Vector<float>(0, 0, 1));
+                                viewport->cam->reset_progressive_rendering();
+                                break;    
+                            case SDLK_d:
+                                viewport->cam->addRelativeRotation(Vector<float>(0, 0, -1));
+                                viewport->cam->reset_progressive_rendering();
+                                break;
+
                             default:
                                 break;
+                        }
+                        viewport->cam->cuda();
+                    }
+
+                    if (e.type == SDL_MOUSEBUTTONDOWN) {
+                        if (e.button.button == SDL_BUTTON_LEFT) {
+                            Ray ray = viewport->cam->generate_ray(e.button.x, e.button.y);
+                            Array<BVH> bvhs = viewport->env->BVHs;
+                            bvhs.cpu();
+                            Hit hit = Tracing::rayBVHs(ray, bvhs);
+                            int index = hit.getBVHindex();
+                            std::cout << "Clic :" << index << " " << e.button.x << " " << e.button.y << std::endl;
+
+                            BVH bvh = viewport->env->BVHs[index];
+                            bvh.addRelativeRotation(Vector<float>(0, 1, 0));
+                            bvh.cuda();
+                            viewport->cam->reset_progressive_rendering();
                         }
                     }
                 }

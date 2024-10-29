@@ -7,13 +7,16 @@
 CXX = g++
 CXXCUDA = nvcc
 
+FLAG_GTKMM = `pkg-config --cflags gtkmm-3.0`
+LIB_GTKMM = `pkg-config --libs gtkmm-3.0`
+
 # define any compile-time flags
-CXXFLAGS	:= -O3 -std=c++20 -Wall -Wextra -g -Wdouble-promotion -Wno-unused-function -Wno-sign-compare
+CXXFLAGS	:= -O3 -std=c++20 -Wall -Wextra -g -Wdouble-promotion -Wno-unused-function -Wno-sign-compare $(FLAG_GTKMM)
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
 #   their path using -Lpath, something like:
-LFLAGS = -lpng -fopenmp -lm -lcudart -lSDL2 -lSDL2_ttf
+LFLAGS = -lpng -fopenmp -lm -lcudart -lSDL2 -lSDL2_ttf $(LIB_GTKMM)
 
 # define output directory
 OUTPUT	:= build

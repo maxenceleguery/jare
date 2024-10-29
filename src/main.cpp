@@ -1,5 +1,6 @@
 #include <iostream> 
 #include "Vector.hpp"
+#include "Matrix4x4.hpp"
 #include "Camera.hpp"
 #include "Viewport.hpp"
 #include "Pixel.hpp"
@@ -7,6 +8,8 @@
 #include "Triangle.hpp"
 #include "Matrix.hpp"
 #include "Line.hpp"
+
+#include "SceneObjectWindow.hpp"
 
 #include <cuda_runtime.h>
 
@@ -19,10 +22,10 @@ void objRender() {
 	Vector<float> origine = Vector<float>(-3.,0.,1.5);
 	Vector<float> front = Vector<float>(1,0,-0.2);
 	Camera cam = Camera(origine,front,1280,720);
-	Viewport viewport = Viewport(&cam);
 	Environment env = Environment(&cam);
+	Viewport viewport = Viewport(&env);
 
-	cam.move(-Vector<float>(5.0,0.,-1.5));
+	cam.addRelativeOffset(-Vector<float>(5.0,0.,-1.5));
 
 	Material light = Materials::LIGHT;
 
@@ -37,14 +40,14 @@ void objRender() {
 	//env.addSquare(Vector(0.,0.,0.),Vector(2.,-2.,0.),Vector(2.,-2.,2.),Vector(0.,0.,2.), Material(Colors::WHITE, MaterialType::GLASS));
 	//env.addSquare(Vector(0.,0.,2.),Vector(2.,-2.,1.),Vector(2.,0.,2.),Vector(2.,2.,2.), Material(Colors::WHITE, MaterialType::GLASS));
 
-	env.addObj("knight.obj",Vector<float>(0,0,0),0.5, Colors::WHITE);
+	env.addObj("knight.obj", Vector<float>(0,0,0), 0.5, Vector<float>(-90,0,0), Colors::WHITE);
 
 	env.addBackground(Colors::BLACK);
 	env.setMode(Mode::BVH_RAYTRACING);
 
 	for (uint i = 0; i<10; i++) {
 		env.renderCudaBVH();
-		cam.move(Vector<float>(0., -0.5, 0.));
+		cam.addRelativeOffset(Vector<float>(0., -0.5, 0.));
 	}
 	std::string path = "./render4/image";
 	std::string format = ".png";
@@ -55,20 +58,18 @@ void objRender() {
 }
 
 void animObj() {
-	Vector<float> origine = Vector<float>(-3.,0.,1.5);
-	Vector<float> front = Vector<float>(1,0,-0.2);
-	Camera cam = Camera(origine,front,1280,720);
+	Vector<float> origine = Vector<float>(-10, 0, 2.5);
+	Vector<float> front = Vector<float>(1, 0, 0);
+	Camera cam = Camera(origine, front, 1280, 720);
 	cam.init();
-	Viewport viewport = Viewport(&cam);
-
-	cam.move(-Vector<float>(5.0,0.,-1.5));
 	cam.cuda();
 
 	Environment env = Environment(&cam);
+	Viewport viewport = Viewport(&env);
 
 	Material light = Materials::LIGHT;
 
-	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.), Colors::WHITE);
+	env.addSquare(Vector(20.,20.,0.),Vector(-20.,20.,0.),Vector(-20.,-20.,0.),Vector(20.,-20.,0.), Pixel(220, 220, 220));
 
 	light.setColor(Colors::GREEN);
 	env.addSquare(Vector(0.,-2.,0.)*2,Vector(0.,-2.,2.)*2,Vector(2.,-2.,2.)*2,Vector(2.,-2.,0.)*2, light); // left panel 
@@ -82,12 +83,14 @@ void animObj() {
 	//env.addSquare(Vector(0.,0.,0.),Vector(2.,-2.,0.),Vector(2.,-2.,2.),Vector(0.,0.,2.), Material(Colors::WHITE, MaterialType::GLASS));
 	//env.addSquare(Vector(0.,0.,2.),Vector(2.,-2.,1.),Vector(2.,0.,2.),Vector(2.,2.,2.), Material(Colors::WHITE, MaterialType::GLASS));
 
-	env.addObj("knight.obj", Vector<float>(0,0,0), 0.5, Material(Colors::WHITE, MaterialType::DEFAULT));
-	env.addObj("sphere.obj", Vector<float>(0,2,2), 0.5, Material(Colors::WHITE, MaterialType::MIRROR));
+	//env.addObj("knight.obj", Vector<float>(0, 0, 0), 1., Vector<float>(90, 0, 0), Material(Colors::WHITE, MaterialType::DEFAULT));
+	env.addObj("sphere.obj", Vector<float>(0, 0, 0.5), 1., Vector<float>(90, 0, 0), Material(Colors::WHITE, MaterialType::MIRROR));
 
 	//env.addBackground(Colors::BLACK);
 	env.setMode(Mode::BVH_RAYTRACING);
 	env.compute_bvhs();
+
+	//std::cout << "Total allocated cuda memory : " << human_rep(allocated_cuda_memory) << std::endl;
 
 	viewport.start();
 	while (viewport.isOn()) {
@@ -136,14 +139,60 @@ void test_random() {
 	//std::cout << "khi² = " << khi_square << std::endl;
 }
 
+void test_matrix4x4() {
+	Matrix4x4 mat = Matrix4x4(
+		Vector4<float>(1, 0, 0, 0),
+		Vector4<float>(0, 1, 0, 0),
+		Vector4<float>(0, 0, 1, 0),
+		Vector4<float>(0, 0, 0, 1)
+	);
+	if (mat != mat.inverse()) {
+		throw std::runtime_error("Inverse of identity wrong");
+	}
+
+	Matrix4x4 mat2 = Matrix4x4(
+		Vector4<float>(2, 2, 3, 3),
+		Vector4<float>(2, 3, 3, 2),
+		Vector4<float>(5, 3, 7, 9),
+		Vector4<float>(3, 2, 4, 7)
+	);
+	Matrix4x4 mat2_inv = Matrix4x4(
+		Vector4<float>(26, -11, -7, 1),
+		Vector4<float>(0, -1, 1, -1),
+		Vector4<float>(-16, 7, 3, 1),
+		Vector4<float>(-2, 1, 1, -1)
+	)*-0.5;
+	if (mat2.inverse() != mat2_inv) {
+		throw std::runtime_error("Inverse wrong");
+	}
+
+	if (mat*mat2 != mat2) {
+		throw std::runtime_error("Mult with ID wrong");
+	}
+
+	if (mat2*Vector4<float>(1, 1, 1, 1) != Vector4<float>(10, 10, 24, 16)) {
+		throw std::runtime_error("Mult with vect4 wrong");
+	}
+}
+
+void test_gtkmm() {
+	auto app = Gtk::Application::create();
+	SceneObjectWindow win = SceneObjectWindow();
+	app->run(win);
+}
+
 int main() {
 	static_assert(std::is_base_of<CudaReady, Pixel>::value == false);
 	static_assert(std::is_base_of<CudaReady, Array<double>>::value == true);
 	static_assert(std::is_base_of<CudaReady, BVH>::value == true);
 
+	test_matrix4x4();
+
 	for (uint i=0; i<10; i++)
 		test_random();
 	std::cout << "Tests on randomness passed" << std::endl;
+
+	//test_gtkmm();
 
 	/*
 	uint W = 1280;
@@ -172,5 +221,6 @@ int main() {
 	std::chrono::duration<float> elapsed_seconds = end-start;
 	std::cout << "Render time:\t\t" << elapsed_seconds.count() << "s\n";
 
+	//std::cout << "Allocated cuda memory at the end : " << human_rep(allocated_cuda_memory) << std::endl;
 	return EXIT_SUCCESS; 
 }
