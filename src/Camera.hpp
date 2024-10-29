@@ -174,54 +174,6 @@ class Camera : public SceneObject {
             return fov;
         }
 
-        /*
-        __host__ void offset(const Vector<float>& offset) {
-            transforms[0] += orientations[0]*offset.getX() + -orientations[1]*offset.getY() + orientations[2]*offset.getZ();
-            reset_progressive_rendering();
-        }
-
-        __host__ void scale(const Vector<float>& scale) {
-            return;
-        }
-        __host__ void rotate(const Vector<float>& angleDeg) {
-            const Matrix4x4 mat_basis_change = Matrix4x4(
-                Vector4<float>(-orientations[1], 0),
-                Vector4<float>(orientations[0], 0),
-                Vector4<float>(orientations[2], 0),
-                Vector4<float>()
-            ).transpose();
-            const Matrix4x4 mat = Transformations::GetRotationMatrix(mat_basis_change*angleDeg);
-            orientations[0] = (mat*orientations[0]).normalize();
-            -orientations[1] = (mat*-orientations[1]).normalize();
-            orientations[2] = (mat*orientations[2]).normalize();
-
-            reset_progressive_rendering();
-        }
-
-        __host__ void addOffset(const Vector<float>& offset) {
-            transforms[0] += orientations[0]*offset.getX() + -orientations[1]*offset.getY() + orientations[2]*offset.getZ();
-            transforms[0] += orientations[0]*offset.getX() + -orientations[1]*offset.getY() + orientations[2]*offset.getZ();
-            reset_progressive_rendering();
-        }
-
-        __host__ void addScale(const Vector<float>& scale) {
-            return;
-        }
-        __host__ void addRotate(const Vector<float>& angleDeg) {
-            const Matrix4x4 mat_basis_change = Matrix4x4(
-                Vector4<float>(-orientations[1], 0),
-                Vector4<float>(orientations[0], 0),
-                Vector4<float>(orientations[2], 0),
-                Vector4<float>()
-            ).transpose();
-            const Matrix4x4 mat = Transformations::GetRotationMatrix(mat_basis_change*angleDeg);
-            orientations[0] = (mat*orientations[0]).normalize();
-            -orientations[1] = (mat*-orientations[1]).normalize();
-            orientations[2] = (mat*orientations[2]).normalize();
-
-            reset_progressive_rendering();
-        }*/
-
         __host__ void write_png_file(const char* filename, uint8_t* image_data) {
             FILE *fp = fopen(filename, "wb");
             png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);

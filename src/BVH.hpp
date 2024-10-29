@@ -136,7 +136,6 @@ class BVH : public Mesh {
     
     public:
         Array<Node> allNodes;
-        //Mesh allTriangles;
     
         __host__ BVH() : Mesh() {}; 
         __host__ BVH(const Mesh mesh) : Mesh(mesh) {
